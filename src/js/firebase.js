@@ -1,24 +1,25 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, get } from 'firebase/database';
-import { firebaseConfig, DATABASE_PATH, LOG_FIELDS } from '../config/firebase-config.js';
+import { getDatabase, ref, get, query, orderByKey, startAt, endAt, limitToFirst } from 'firebase/database';
+import { firebaseConfig, DATABASE_PATH, LOGS_PATH, INDEX_PATHS, LOG_FIELDS } from '../config/firebase-config.js';
 
 /**
- * Firebase service for handling database operations
+ * Firebase service for handling database operations with new schema
  */
 class FirebaseService {
   constructor() {
     this.app = initializeApp(firebaseConfig);
     this.database = getDatabase(this.app);
-    this.baseRef = ref(this.database, DATABASE_PATH);
+    this.project = DATABASE_PATH;
   }
 
   /**
-   * Fetch logs with optional filtering
+   * Fetch logs with optional filtering using new schema
    * @param {Object} filters - Filter options
    * @param {string} filters.server - Server filter
    * @param {string} filters.platform - Platform filter
    * @param {string} filters.date - Date filter (YYYY-MM-DD)
    * @param {string} filters.userId - User ID filter
+   * @param {string} filters.quickUserId - Quick user search
    * @param {string} filters.nickname - Nickname filter
    * @param {string} filters.message - Message content filter
    * @param {number} filters.monthsBack - Number of months to look back (default: 3)
@@ -28,46 +29,23 @@ class FirebaseService {
     try {
       console.log('Firebase: Fetching logs with filters:', filters);
       
-      let logsRef = this.baseRef;
+      // Get log IDs based on filters
+      const logIds = await this.getLogIds(filters);
+      console.log('Firebase: Found log IDs:', logIds.length);
       
-      // Apply path filters
-      if (filters.server) {
-        logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}`);
-        console.log('Firebase: Using server path:', logsRef.toString());
-      }
-      
-      if (filters.platform && filters.server) {
-        logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}/${filters.platform}`);
-        console.log('Firebase: Using platform path:', logsRef.toString());
-      }
-      
-      if (filters.date && filters.server && filters.platform) {
-        logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}/${filters.platform}/${filters.date}`);
-        console.log('Firebase: Using date path:', logsRef.toString());
-      }
-      
-      if (filters.userId && filters.server && filters.platform && filters.date) {
-        logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}/${filters.platform}/${filters.date}/${filters.userId}`);
-        console.log('Firebase: Using userId path:', logsRef.toString());
-      }
-
-      console.log('Firebase: Final path for fetching:', logsRef.toString());
-      const snapshot = await get(logsRef);
-      
-      if (!snapshot.exists()) {
-        console.log('Firebase: No data found at path');
+      if (logIds.length === 0) {
         return [];
       }
-
-      const logs = [];
-      const data = snapshot.val();
-      console.log('Firebase: Data structure at path:', Object.keys(data || {}));
-
-      // Recursively traverse the data structure to find log entries
-      this.extractLogs(data, logs, filters);
-      console.log('Firebase: Extracted logs count:', logs.length);
-
-      return logs;
+      
+      // Fetch actual log data
+      const logs = await this.fetchLogsByIds(logIds);
+      console.log('Firebase: Fetched logs:', logs.length);
+      
+      // Apply text filters (nickname, message, quickUserId)
+      const filteredLogs = this.applyTextFilters(logs, filters);
+      console.log('Firebase: After text filtering:', filteredLogs.length);
+      
+      return filteredLogs;
     } catch (error) {
       console.error('Error fetching logs:', error);
       throw new Error(`Failed to fetch logs: ${error.message}`);
@@ -75,18 +53,216 @@ class FirebaseService {
   }
 
   /**
-   * Fetch available servers only
+   * Get log IDs based on filters using appropriate index
+   * @param {Object} filters - Filter options
+   * @returns {Promise<Array>} Array of log IDs
+   */
+  async getLogIds(filters) {
+    try {
+      let indexPath = '';
+      
+      // Determine which index to use based on available filters
+      if (filters.server && filters.platform && filters.date) {
+        // Use project + server + platform + date index
+        indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${filters.server}/${filters.platform}/${filters.date}`;
+        console.log('Firebase: Using PROJECT_SERVER_PLATFORM_DATE index:', indexPath);
+      } else if (filters.platform && filters.date) {
+        // Use project + platform + date index
+        indexPath = `${INDEX_PATHS.PROJECT_PLATFORM_DATE}/${this.project}/${filters.platform}/${filters.date}`;
+        console.log('Firebase: Using PROJECT_PLATFORM_DATE index:', indexPath);
+      } else if (filters.date) {
+        // Use project + date index
+        indexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${filters.date}`;
+        console.log('Firebase: Using PROJECT_DATE index:', indexPath);
+      } else if (filters.quickUserId && filters.date) {
+        // Use user + date index
+        const sanitizedUserId = this.sanitizeUserId(filters.quickUserId);
+        indexPath = `${INDEX_PATHS.USER_DATE}/${sanitizedUserId}/${filters.date}`;
+        console.log('Firebase: Using USER_DATE index:', indexPath);
+      } else if (filters.quickUserId) {
+        // For user search without date, we need to search across multiple dates
+        // This is a simplified approach - in production you might want to limit the date range
+        const sanitizedUserId = this.sanitizeUserId(filters.quickUserId);
+        const recentDates = this.getRecentDates(filters.monthsBack || 3);
+        const allLogIds = [];
+        
+        for (const date of recentDates) {
+          const dateIndexPath = `${INDEX_PATHS.USER_DATE}/${sanitizedUserId}/${date}`;
+          const dateLogIds = await this.getLogIdsFromIndex(dateIndexPath);
+          allLogIds.push(...dateLogIds);
+        }
+        
+        return allLogIds;
+      } else {
+        // Default: use project + date for last 3 months
+        const recentDates = this.getRecentDates(filters.monthsBack || 3);
+        const allLogIds = [];
+        
+        for (const date of recentDates) {
+          const dateIndexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${date}`;
+          const dateLogIds = await this.getLogIdsFromIndex(dateIndexPath);
+          allLogIds.push(...dateLogIds);
+        }
+        
+        return allLogIds;
+      }
+      
+      return await this.getLogIdsFromIndex(indexPath);
+    } catch (error) {
+      console.error('Error getting log IDs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get log IDs from a specific index path
+   * @param {string} indexPath - Index path
+   * @returns {Promise<Array>} Array of log IDs
+   */
+  async getLogIdsFromIndex(indexPath) {
+    try {
+      const indexRef = ref(this.database, indexPath);
+      const snapshot = await get(indexRef);
+      
+      if (!snapshot.exists()) {
+        return [];
+      }
+      
+      const logIds = Object.keys(snapshot.val());
+      console.log('Firebase: Found log IDs from index:', logIds.length);
+      return logIds;
+    } catch (error) {
+      console.error('Error getting log IDs from index:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch logs by their IDs
+   * @param {Array} logIds - Array of log IDs
+   * @returns {Promise<Array>} Array of log entries
+   */
+  async fetchLogsByIds(logIds) {
+    try {
+      const logs = [];
+      const batchSize = 100; // Firebase has limits on concurrent requests
+      
+      for (let i = 0; i < logIds.length; i += batchSize) {
+        const batch = logIds.slice(i, i + batchSize);
+        const batchPromises = batch.map(logId => this.fetchLogById(logId));
+        const batchResults = await Promise.all(batchPromises);
+        logs.push(...batchResults.filter(log => log !== null));
+      }
+      
+      return logs;
+    } catch (error) {
+      console.error('Error fetching logs by IDs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch a single log by ID
+   * @param {string} logId - Log ID
+   * @returns {Promise<Object|null>} Log entry or null
+   */
+  async fetchLogById(logId) {
+    try {
+      const logRef = ref(this.database, `${LOGS_PATH}/${logId}`);
+      const snapshot = await get(logRef);
+      
+      if (!snapshot.exists()) {
+        return null;
+      }
+      
+      const logData = snapshot.val();
+      return {
+        ...logData,
+        logId,
+        timestamp: logData.ts // Convert ts to timestamp for compatibility
+      };
+    } catch (error) {
+      console.error('Error fetching log by ID:', logId, error);
+      return null;
+    }
+  }
+
+  /**
+   * Apply text filters to logs
+   * @param {Array} logs - Array of log entries
+   * @param {Object} filters - Filter options
+   * @returns {Array} Filtered logs
+   */
+  applyTextFilters(logs, filters) {
+    return logs.filter(log => {
+      if (filters.nickname && !log.nickname.toLowerCase().includes(filters.nickname.toLowerCase())) {
+        return false;
+      }
+      if (filters.message && !log.message.toLowerCase().includes(filters.message.toLowerCase())) {
+        return false;
+      }
+      if (filters.quickUserId && !log.userId.toLowerCase().includes(filters.quickUserId.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Sanitize user ID for use in paths
+   * @param {string} userId - User ID
+   * @returns {string} Sanitized user ID
+   */
+  sanitizeUserId(userId) {
+    return userId.replace(/[.#$[\]]/g, '_');
+  }
+
+  /**
+   * Get recent dates for the last N months
+   * @param {number} monthsBack - Number of months to look back
+   * @returns {Array} Array of date strings (YYYY-MM-DD)
+   */
+  getRecentDates(monthsBack) {
+    const dates = [];
+    const now = new Date();
+    
+    for (let i = 0; i < monthsBack * 30; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    
+    return dates;
+  }
+
+  /**
+   * Fetch available servers using new schema
    * @returns {Promise<Array>} Array of server names
    */
   async fetchServers() {
     try {
-      console.log('Firebase: Fetching servers from', this.baseRef.toString());
-      const snapshot = await get(this.baseRef);
-      if (!snapshot.exists()) {
-        console.log('Firebase: No servers found');
-        return [];
+      console.log('Firebase: Fetching servers using new schema');
+      
+      // Get recent dates to search for servers
+      const recentDates = this.getRecentDates(3);
+      const serverSet = new Set();
+      
+      for (const date of recentDates) {
+        const indexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${date}`;
+        const logIds = await this.getLogIdsFromIndex(indexPath);
+        
+        // Fetch a sample of logs to extract server names
+        const sampleLogIds = logIds.slice(0, 10);
+        const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
+        
+        sampleLogs.forEach(log => {
+          if (log.server) {
+            serverSet.add(log.server);
+          }
+        });
       }
-      const servers = Object.keys(snapshot.val()).sort();
+      
+      const servers = Array.from(serverSet).sort();
       console.log('Firebase: Servers found:', servers);
       return servers;
     } catch (error) {
@@ -96,18 +272,36 @@ class FirebaseService {
   }
 
   /**
-   * Fetch platforms for a specific server
+   * Fetch platforms for a specific server using new schema
    * @param {string} server - Server name
    * @returns {Promise<Array>} Array of platform names
    */
   async fetchPlatforms(server) {
     try {
-      const serverRef = ref(this.database, `${DATABASE_PATH}/${server}`);
-      const snapshot = await get(serverRef);
-      if (!snapshot.exists()) {
-        return [];
+      console.log('Firebase: Fetching platforms for server:', server);
+      
+      // Get recent dates to search for platforms
+      const recentDates = this.getRecentDates(3);
+      const platformSet = new Set();
+      
+      for (const date of recentDates) {
+        const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${server}/${date}`;
+        const logIds = await this.getLogIdsFromIndex(indexPath);
+        
+        // Fetch a sample of logs to extract platform names
+        const sampleLogIds = logIds.slice(0, 10);
+        const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
+        
+        sampleLogs.forEach(log => {
+          if (log.platform) {
+            platformSet.add(log.platform);
+          }
+        });
       }
-      return Object.keys(snapshot.val()).sort();
+      
+      const platforms = Array.from(platformSet).sort();
+      console.log('Firebase: Platforms found:', platforms);
+      return platforms;
     } catch (error) {
       console.error('Error fetching platforms:', error);
       return [];
@@ -115,19 +309,30 @@ class FirebaseService {
   }
 
   /**
-   * Fetch dates for a specific server and platform
+   * Fetch dates for a specific server and platform using new schema
    * @param {string} server - Server name
    * @param {string} platform - Platform name
    * @returns {Promise<Array>} Array of date strings
    */
   async fetchDates(server, platform) {
     try {
-      const platformRef = ref(this.database, `${DATABASE_PATH}/${server}/${platform}`);
-      const snapshot = await get(platformRef);
-      if (!snapshot.exists()) {
-        return [];
+      console.log('Firebase: Fetching dates for server:', server, 'platform:', platform);
+      
+      // Get recent dates and check which ones have data
+      const recentDates = this.getRecentDates(6);
+      const availableDates = [];
+      
+      for (const date of recentDates) {
+        const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${server}/${platform}/${date}`;
+        const logIds = await this.getLogIdsFromIndex(indexPath);
+        
+        if (logIds.length > 0) {
+          availableDates.push(date);
+        }
       }
-      return Object.keys(snapshot.val()).sort();
+      
+      console.log('Firebase: Dates found:', availableDates);
+      return availableDates;
     } catch (error) {
       console.error('Error fetching dates:', error);
       return [];
@@ -135,7 +340,7 @@ class FirebaseService {
   }
 
   /**
-   * Fetch user IDs for a specific server, platform, and date
+   * Fetch user IDs for a specific server, platform, and date using new schema
    * @param {string} server - Server name
    * @param {string} platform - Platform name
    * @param {string} date - Date string
@@ -143,210 +348,37 @@ class FirebaseService {
    */
   async fetchUserIds(server, platform, date) {
     try {
-      const dateRef = ref(this.database, `${DATABASE_PATH}/${server}/${platform}/${date}`);
-      const snapshot = await get(dateRef);
-      if (!snapshot.exists()) {
+      console.log('Firebase: Fetching user IDs for server:', server, 'platform:', platform, 'date:', date);
+      
+      const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${server}/${platform}/${date}`;
+      const logIds = await this.getLogIdsFromIndex(indexPath);
+      
+      if (logIds.length === 0) {
         return [];
       }
-      return Object.keys(snapshot.val()).sort();
+      
+      // Fetch logs to extract unique user IDs
+      const logs = await this.fetchLogsByIds(logIds);
+      const userIdSet = new Set();
+      
+      logs.forEach(log => {
+        if (log.userId) {
+          userIdSet.add(log.userId);
+        }
+      });
+      
+      const userIds = Array.from(userIdSet).sort();
+      console.log('Firebase: User IDs found:', userIds.length);
+      return userIds;
     } catch (error) {
       console.error('Error fetching user IDs:', error);
       return [];
     }
   }
 
-  /**
-   * Extract log entries from nested data structure
-   * @param {Object} data - Data to traverse
-   * @param {Array} logs - Array to store extracted logs
-   * @param {Object} filters - Current filters
-   * @param {Array} path - Current path in the data structure
-   */
-  extractLogs(data, logs, filters, path = []) {
-    if (!data || typeof data !== 'object') {
-      return;
-    }
 
-    // Check if this level contains log fields
-    if (data[LOG_FIELDS.MESSAGE] || data[LOG_FIELDS.NICKNAME] || data[LOG_FIELDS.TIMESTAMP]) {
-      // When we're at the log entry level, we need to reconstruct the full path
-      // The current path only contains the log index, but we need the full hierarchy
-      const fullPath = this.reconstructFullPath(path, filters);
-      
-      const logEntry = {
-        message: data[LOG_FIELDS.MESSAGE] || '',
-        nickname: data[LOG_FIELDS.NICKNAME] || '',
-        timestamp: data[LOG_FIELDS.TIMESTAMP] || '',
-        path: fullPath.join('/'),
-        ...this.extractPathInfo(fullPath)
-      };
 
-      console.log('Firebase: Found log entry at path:', fullPath.join('/'), 'with data:', logEntry);
 
-      // Apply filters
-      if (this.matchesFilters(logEntry, filters)) {
-        console.log('Firebase: Log entry matches filters, adding to results');
-        logs.push(logEntry);
-      } else {
-        console.log('Firebase: Log entry does not match filters');
-      }
-    } else {
-      // Continue traversing
-      console.log('Firebase: Traversing path:', path.join('/'), 'with keys:', Object.keys(data));
-      Object.keys(data).forEach(key => {
-        this.extractLogs(data[key], logs, filters, [...path, key]);
-      });
-    }
-  }
-
-  /**
-   * Reconstruct full path from filters when we're at the log entry level
-   * @param {Array} path - Current path (usually just log index)
-   * @param {Object} filters - Current filters
-   * @returns {Array} Full path array
-   */
-  reconstructFullPath(path, filters) {
-    const fullPath = [];
-    
-    if (filters.server) fullPath.push(filters.server);
-    if (filters.platform) fullPath.push(filters.platform);
-    if (filters.date) fullPath.push(filters.date);
-    if (filters.userId) fullPath.push(filters.userId);
-    
-    // Add the log index from the current path
-    if (path.length > 0) {
-      fullPath.push(path[path.length - 1]);
-    }
-    
-    return fullPath;
-  }
-
-  /**
-   * Extract server, platform, date, and userId from path
-   * @param {Array} path - Path array
-   * @returns {Object} Path information
-   */
-  extractPathInfo(path) {
-    return {
-      server: path[0] || '',
-      platform: path[1] || '',
-      date: path[2] || '',
-      userId: path[3] || '',
-      logIndex: path[4] || ''
-    };
-  }
-
-  /**
-   * Check if log entry matches all applied filters
-   * @param {Object} logEntry - Log entry to check
-   * @param {Object} filters - Filters to apply
-   * @returns {boolean} True if log matches all filters
-   */
-  matchesFilters(logEntry, filters) {
-    console.log('Firebase: Checking filters for log entry:', logEntry);
-    console.log('Firebase: Applied filters:', filters);
-    
-    if (filters.server && logEntry.server !== filters.server) {
-      console.log('Firebase: Server filter failed - expected:', filters.server, 'got:', logEntry.server);
-      return false;
-    }
-    if (filters.platform && logEntry.platform !== filters.platform) {
-      console.log('Firebase: Platform filter failed - expected:', filters.platform, 'got:', logEntry.platform);
-      return false;
-    }
-    if (filters.date && logEntry.date !== filters.date) {
-      console.log('Firebase: Date filter failed - expected:', filters.date, 'got:', logEntry.date);
-      return false;
-    }
-    if (filters.userId && logEntry.userId !== filters.userId) {
-      console.log('Firebase: UserId filter failed - expected:', filters.userId, 'got:', logEntry.userId);
-      return false;
-    }
-    
-    // Quick user search - search in userId field
-    if (filters.quickUserId && !logEntry.userId.toLowerCase().includes(filters.quickUserId.toLowerCase())) {
-      console.log('Firebase: QuickUserId filter failed');
-      return false;
-    }
-    
-    if (filters.nickname && !logEntry.nickname.toLowerCase().includes(filters.nickname.toLowerCase())) {
-      console.log('Firebase: Nickname filter failed');
-      return false;
-    }
-    if (filters.message && !logEntry.message.toLowerCase().includes(filters.message.toLowerCase())) {
-      console.log('Firebase: Message filter failed');
-      return false;
-    }
-    
-    // Date range filter
-    if (filters.monthsBack) {
-      const logDate = new Date(logEntry.timestamp);
-      const cutoffDate = new Date();
-      cutoffDate.setMonth(cutoffDate.getMonth() - filters.monthsBack);
-      
-      if (logDate < cutoffDate) {
-        console.log('Firebase: Date range filter failed - log date:', logDate, 'cutoff:', cutoffDate);
-        return false;
-      }
-    }
-    
-    console.log('Firebase: All filters passed');
-    return true;
-  }
-
-  /**
-   * Get unique values for filter options
-   * @param {string} field - Field to get unique values for
-   * @returns {Promise<Array>} Array of unique values
-   */
-  async getUniqueValues(field) {
-    try {
-      const snapshot = await get(this.baseRef);
-      if (!snapshot.exists()) {
-        return [];
-      }
-
-      const values = new Set();
-      const data = snapshot.val();
-      
-      this.extractUniqueValues(data, values, field);
-      
-      return Array.from(values).sort();
-    } catch (error) {
-      console.error(`Error getting unique values for ${field}:`, error);
-      return [];
-    }
-  }
-
-  /**
-   * Extract unique values for a specific field
-   * @param {Object} data - Data to traverse
-   * @param {Set} values - Set to store unique values
-   * @param {string} field - Field to extract
-   * @param {Array} path - Current path
-   */
-  extractUniqueValues(data, values, field, path = []) {
-    if (!data || typeof data !== 'object') {
-      return;
-    }
-
-    if (path.length === 0 && field === 'server') {
-      Object.keys(data).forEach(key => values.add(key));
-    } else if (path.length === 1 && field === 'platform') {
-      // Platform level contains both platforms and dates
-      Object.keys(data).forEach(key => values.add(key));
-    } else if (path.length === 2 && field === 'date') {
-      // Date level contains user IDs
-      Object.keys(data).forEach(key => values.add(key));
-    } else if (path.length === 3 && field === 'userId') {
-      // User ID level
-      Object.keys(data).forEach(key => values.add(key));
-    } else {
-      Object.keys(data).forEach(key => {
-        this.extractUniqueValues(data[key], values, field, [...path, key]);
-      });
-    }
-  }
 }
 
 export default FirebaseService;

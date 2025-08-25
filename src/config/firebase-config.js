@@ -20,11 +20,32 @@ export const firebaseConfig = {
 export const DATABASE_PATH = 'StreamersMegagames';
 
 /**
- * Available log fields
+ * New schema constants
+ * @type {Object}
+ */
+export const LOGS_PATH = 'logs';
+export const INDEX_PATHS = {
+  PROJECT_DATE: 'idx_by_project_date',
+  USER_DATE: 'idx_by_user_date',
+  PROJECT_SERVER_PLATFORM_DATE: 'idx_by_proj_srv_plat_date',
+  PROJECT_USER_DATE: 'idx_by_project_user_date',
+  PROJECT_TS: 'idx_by_project_ts',
+  PROJECT_PLATFORM_DATE: 'idx_by_project_platform_date',
+  PROJECT_PLATFORM_TS: 'idx_by_project_platform_ts'
+};
+
+/**
+ * Available log fields (updated for new schema)
  * @type {Object}
  */
 export const LOG_FIELDS = {
-  MESSAGE: 'message',
+  PROJECT: 'project',
+  SERVER: 'server',
+  PLATFORM: 'platform',
+  DATE: 'date',
+  USER_ID: 'userId',
+  SEQ: 'seq',
   NICKNAME: 'nickname',
-  TIMESTAMP: 'timestamp'
+  MESSAGE: 'message',
+  TS: 'ts'
 };
