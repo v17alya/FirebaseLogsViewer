@@ -169,15 +169,19 @@ class FirebaseService {
 
     // Check if this level contains log fields
     if (data[LOG_FIELDS.MESSAGE] || data[LOG_FIELDS.NICKNAME] || data[LOG_FIELDS.TIMESTAMP]) {
+      // When we're at the log entry level, we need to reconstruct the full path
+      // The current path only contains the log index, but we need the full hierarchy
+      const fullPath = this.reconstructFullPath(path, filters);
+      
       const logEntry = {
         message: data[LOG_FIELDS.MESSAGE] || '',
         nickname: data[LOG_FIELDS.NICKNAME] || '',
         timestamp: data[LOG_FIELDS.TIMESTAMP] || '',
-        path: path.join('/'),
-        ...this.extractPathInfo(path)
+        path: fullPath.join('/'),
+        ...this.extractPathInfo(fullPath)
       };
 
-      console.log('Firebase: Found log entry at path:', path.join('/'), 'with data:', logEntry);
+      console.log('Firebase: Found log entry at path:', fullPath.join('/'), 'with data:', logEntry);
 
       // Apply filters
       if (this.matchesFilters(logEntry, filters)) {
@@ -193,6 +197,28 @@ class FirebaseService {
         this.extractLogs(data[key], logs, filters, [...path, key]);
       });
     }
+  }
+
+  /**
+   * Reconstruct full path from filters when we're at the log entry level
+   * @param {Array} path - Current path (usually just log index)
+   * @param {Object} filters - Current filters
+   * @returns {Array} Full path array
+   */
+  reconstructFullPath(path, filters) {
+    const fullPath = [];
+    
+    if (filters.server) fullPath.push(filters.server);
+    if (filters.platform) fullPath.push(filters.platform);
+    if (filters.date) fullPath.push(filters.date);
+    if (filters.userId) fullPath.push(filters.userId);
+    
+    // Add the log index from the current path
+    if (path.length > 0) {
+      fullPath.push(path[path.length - 1]);
+    }
+    
+    return fullPath;
   }
 
   /**

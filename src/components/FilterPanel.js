@@ -37,9 +37,9 @@ export class FilterPanel {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Server</label>
             <div class="relative">
-              <input type="text" id="server-search" class="input-field pr-8" placeholder="Search servers...">
-              <select id="server-filter" class="input-field mt-2">
-                <option value="">All Servers</option>
+              <input type="text" id="server-search" class="input-field pr-8 opacity-50 cursor-not-allowed" placeholder="Loading servers..." disabled>
+              <select id="server-filter" class="input-field mt-2 opacity-50 cursor-not-allowed" disabled>
+                <option value="">Loading servers...</option>
               </select>
             </div>
           </div>
@@ -371,6 +371,8 @@ export class FilterPanel {
       const servers = await this.onLoadOptions('servers');
       console.log('Servers loaded:', servers);
       this.updateOptions({ servers });
+      this.enableServerFields();
+      console.log('Server fields enabled');
     }
   }
 
@@ -414,6 +416,21 @@ export class FilterPanel {
       console.log('User IDs loaded:', userIds);
       this.updateOptions({ userIds });
     }
+  }
+
+  /**
+   * Enable server fields
+   */
+  enableServerFields() {
+    const serverSearch = this.container.querySelector('#server-search');
+    const serverSelect = this.container.querySelector('#server-filter');
+    
+    serverSearch.disabled = false;
+    serverSearch.classList.remove('opacity-50', 'cursor-not-allowed');
+    serverSearch.placeholder = 'Search servers...';
+    
+    serverSelect.disabled = false;
+    serverSelect.classList.remove('opacity-50', 'cursor-not-allowed');
   }
 
   /**
