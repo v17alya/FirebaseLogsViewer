@@ -283,6 +283,14 @@ export class FilterPanel {
    * @param {Object} options - Filter options
    */
   updateOptions(options) {
+    // Store current values before updating
+    const currentServer = this.container.querySelector('#server-filter').value;
+    const currentPlatform = this.container.querySelector('#platform-filter').value;
+    const currentDate = this.container.querySelector('#date-filter').value;
+    const currentUserId = this.container.querySelector('#userid-filter').value;
+    
+    console.log('updateOptions: Stored values - Server:', currentServer, 'Platform:', currentPlatform, 'Date:', currentDate, 'UserID:', currentUserId);
+    
     this.filterOptions = { ...this.filterOptions, ...options };
     
     // Update server options
@@ -290,6 +298,24 @@ export class FilterPanel {
     this.updateSelectOptions('platform', this.filterOptions.platforms);
     this.updateSelectOptions('date', this.filterOptions.dates);
     this.updateSelectOptions('userid', this.filterOptions.userIds);
+    
+    // Restore current values after updating
+    if (currentServer) {
+      this.container.querySelector('#server-filter').value = currentServer;
+      console.log('updateOptions: Restored server value to:', currentServer);
+    }
+    if (currentPlatform) {
+      this.container.querySelector('#platform-filter').value = currentPlatform;
+      console.log('updateOptions: Restored platform value to:', currentPlatform);
+    }
+    if (currentDate) {
+      this.container.querySelector('#date-filter').value = currentDate;
+      console.log('updateOptions: Restored date value to:', currentDate);
+    }
+    if (currentUserId) {
+      this.container.querySelector('#userid-filter').value = currentUserId;
+      console.log('updateOptions: Restored userId value to:', currentUserId);
+    }
   }
 
   /**
