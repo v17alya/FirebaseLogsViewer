@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, get, query, orderByKey, startAt, endAt, limitToFirst } from 'firebase/database';
-import { firebaseConfig, DATABASE_PATH, LOGS_PATH, INDEX_PATHS, LOG_FIELDS } from '../config/firebase-config.js';
+import { firebaseConfig, PROJECT_NAME, LOGS_PATH, INDEX_PATHS, LOG_FIELDS } from '../config/firebase-config.js';
 
 /**
  * Firebase service for handling database operations with new schema
@@ -9,7 +9,7 @@ class FirebaseService {
   constructor() {
     this.app = initializeApp(firebaseConfig);
     this.database = getDatabase(this.app);
-    this.project = DATABASE_PATH;
+    this.project = PROJECT_NAME;
   }
 
   /**
@@ -59,33 +59,45 @@ class FirebaseService {
    */
   async getLogIds(filters) {
     try {
-      let indexPath = '';
+      console.log('Firebase: Getting log IDs for filters:', filters);
       
-      // Determine which index to use based on available filters
+      // If we have specific filters, use the most specific index
       if (filters.server && filters.platform && filters.date) {
-        // Use project + server + platform + date index
-        indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${filters.server}/${filters.platform}/${filters.date}`;
+        // Most specific: project + server + platform + date
+        const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${filters.server}/${filters.platform}/${filters.date}`;
         console.log('Firebase: Using PROJECT_SERVER_PLATFORM_DATE index:', indexPath);
-      } else if (filters.platform && filters.date) {
-        // Use project + platform + date index
-        indexPath = `${INDEX_PATHS.PROJECT_PLATFORM_DATE}/${this.project}/${filters.platform}/${filters.date}`;
+        return await this.getLogIdsFromIndex(indexPath);
+      }
+      
+      if (filters.platform && filters.date) {
+        // Project + platform + date
+        const indexPath = `${INDEX_PATHS.PROJECT_PLATFORM_DATE}/${this.project}/${filters.platform}/${filters.date}`;
         console.log('Firebase: Using PROJECT_PLATFORM_DATE index:', indexPath);
-      } else if (filters.date) {
-        // Use project + date index
-        indexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${filters.date}`;
-        console.log('Firebase: Using PROJECT_DATE index:', indexPath);
-      } else if (filters.quickUserId && filters.date) {
-        // Use user + date index
+        return await this.getLogIdsFromIndex(indexPath);
+      }
+      
+      if (filters.quickUserId && filters.date) {
+        // User + date
         const sanitizedUserId = this.sanitizeUserId(filters.quickUserId);
-        indexPath = `${INDEX_PATHS.USER_DATE}/${sanitizedUserId}/${filters.date}`;
+        const indexPath = `${INDEX_PATHS.USER_DATE}/${sanitizedUserId}/${filters.date}`;
         console.log('Firebase: Using USER_DATE index:', indexPath);
-      } else if (filters.quickUserId) {
-        // For user search without date, we need to search across multiple dates
-        // This is a simplified approach - in production you might want to limit the date range
+        return await this.getLogIdsFromIndex(indexPath);
+      }
+      
+      if (filters.date) {
+        // Project + date
+        const indexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${filters.date}`;
+        console.log('Firebase: Using PROJECT_DATE index:', indexPath);
+        return await this.getLogIdsFromIndex(indexPath);
+      }
+      
+      if (filters.quickUserId) {
+        // User search across multiple dates
         const sanitizedUserId = this.sanitizeUserId(filters.quickUserId);
         const recentDates = this.getRecentDates(filters.monthsBack || 3);
         const allLogIds = [];
         
+        console.log('Firebase: Searching for user across dates:', recentDates);
         for (const date of recentDates) {
           const dateIndexPath = `${INDEX_PATHS.USER_DATE}/${sanitizedUserId}/${date}`;
           const dateLogIds = await this.getLogIdsFromIndex(dateIndexPath);
@@ -93,21 +105,20 @@ class FirebaseService {
         }
         
         return allLogIds;
-      } else {
-        // Default: use project + date for last 3 months
-        const recentDates = this.getRecentDates(filters.monthsBack || 3);
-        const allLogIds = [];
-        
-        for (const date of recentDates) {
-          const dateIndexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${date}`;
-          const dateLogIds = await this.getLogIdsFromIndex(dateIndexPath);
-          allLogIds.push(...dateLogIds);
-        }
-        
-        return allLogIds;
       }
       
-      return await this.getLogIdsFromIndex(indexPath);
+      // Default: get logs from recent dates
+      const recentDates = this.getRecentDates(filters.monthsBack || 3);
+      const allLogIds = [];
+      
+      console.log('Firebase: Getting logs from recent dates:', recentDates);
+      for (const date of recentDates) {
+        const dateIndexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${date}`;
+        const dateLogIds = await this.getLogIdsFromIndex(dateIndexPath);
+        allLogIds.push(...dateLogIds);
+      }
+      
+      return allLogIds;
     } catch (error) {
       console.error('Error getting log IDs:', error);
       return [];
@@ -251,15 +262,17 @@ class FirebaseService {
         const indexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${date}`;
         const logIds = await this.getLogIdsFromIndex(indexPath);
         
-        // Fetch a sample of logs to extract server names
-        const sampleLogIds = logIds.slice(0, 10);
-        const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
-        
-        sampleLogs.forEach(log => {
-          if (log.server) {
-            serverSet.add(log.server);
-          }
-        });
+        if (logIds.length > 0) {
+          // Fetch a sample of logs to extract server names
+          const sampleLogIds = logIds.slice(0, 20); // Get more samples
+          const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
+          
+          sampleLogs.forEach(log => {
+            if (log.server) {
+              serverSet.add(log.server);
+            }
+          });
+        }
       }
       
       const servers = Array.from(serverSet).sort();
@@ -285,22 +298,25 @@ class FirebaseService {
       const platformSet = new Set();
       
       for (const date of recentDates) {
+        // Try to get platforms for this server and date
         const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${server}/${date}`;
         const logIds = await this.getLogIdsFromIndex(indexPath);
         
-        // Fetch a sample of logs to extract platform names
-        const sampleLogIds = logIds.slice(0, 10);
-        const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
-        
-        sampleLogs.forEach(log => {
-          if (log.platform) {
-            platformSet.add(log.platform);
-          }
-        });
+        if (logIds.length > 0) {
+          // Fetch a sample of logs to extract platform names
+          const sampleLogIds = logIds.slice(0, 20);
+          const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
+          
+          sampleLogs.forEach(log => {
+            if (log.platform) {
+              platformSet.add(log.platform);
+            }
+          });
+        }
       }
       
       const platforms = Array.from(platformSet).sort();
-      console.log('Firebase: Platforms found:', platforms);
+      console.log('Firebase: Platforms found for server', server, ':', platforms);
       return platforms;
     } catch (error) {
       console.error('Error fetching platforms:', error);
@@ -331,7 +347,7 @@ class FirebaseService {
         }
       }
       
-      console.log('Firebase: Dates found:', availableDates);
+      console.log('Firebase: Dates found for server', server, 'platform', platform, ':', availableDates);
       return availableDates;
     } catch (error) {
       console.error('Error fetching dates:', error);
@@ -354,6 +370,7 @@ class FirebaseService {
       const logIds = await this.getLogIdsFromIndex(indexPath);
       
       if (logIds.length === 0) {
+        console.log('Firebase: No logs found for this combination');
         return [];
       }
       
@@ -368,7 +385,7 @@ class FirebaseService {
       });
       
       const userIds = Array.from(userIdSet).sort();
-      console.log('Firebase: User IDs found:', userIds.length);
+      console.log('Firebase: User IDs found for server', server, 'platform', platform, 'date', date, ':', userIds.length);
       return userIds;
     } catch (error) {
       console.error('Error fetching user IDs:', error);

@@ -14,10 +14,10 @@ export const firebaseConfig = {
 };
 
 /**
- * Database path structure for logs
+ * Project name for logs
  * @type {string}
  */
-export const DATABASE_PATH = 'StreamersMegagames';
+export const PROJECT_NAME = 'StreamersMegagames';
 
 /**
  * New schema constants
