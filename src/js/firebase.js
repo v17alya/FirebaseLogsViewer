@@ -132,18 +132,20 @@ class FirebaseService {
    */
   async getLogIdsFromIndex(indexPath) {
     try {
+      console.log('Firebase: Fetching from path:', indexPath);
       const indexRef = ref(this.database, indexPath);
       const snapshot = await get(indexRef);
       
       if (!snapshot.exists()) {
+        console.log('Firebase: No data found at path:', indexPath);
         return [];
       }
       
       const logIds = Object.keys(snapshot.val());
-      console.log('Firebase: Found log IDs from index:', logIds.length);
+      console.log('Firebase: Found log IDs from path:', indexPath, 'count:', logIds.length);
       return logIds;
     } catch (error) {
-      console.error('Error getting log IDs from index:', error);
+      console.error('Error getting log IDs from path:', indexPath, error);
       return [];
     }
   }
@@ -179,21 +181,25 @@ class FirebaseService {
    */
   async fetchLogById(logId) {
     try {
-      const logRef = ref(this.database, `${LOGS_PATH}/${logId}`);
+      const logPath = `${LOGS_PATH}/${logId}`;
+      console.log('Firebase: Fetching log from path:', logPath);
+      const logRef = ref(this.database, logPath);
       const snapshot = await get(logRef);
       
       if (!snapshot.exists()) {
+        console.log('Firebase: No log found at path:', logPath);
         return null;
       }
       
       const logData = snapshot.val();
+      console.log('Firebase: Successfully fetched log from path:', logPath);
       return {
         ...logData,
         logId,
         timestamp: logData.ts // Convert ts to timestamp for compatibility
       };
     } catch (error) {
-      console.error('Error fetching log by ID:', logId, error);
+      console.error('Error fetching log from path:', `${LOGS_PATH}/${logId}`, error);
       return null;
     }
   }
@@ -260,11 +266,13 @@ class FirebaseService {
       
       for (const date of recentDates) {
         const indexPath = `${INDEX_PATHS.PROJECT_DATE}/${this.project}/${date}`;
+        console.log('Firebase: Checking servers for date:', date, 'at path:', indexPath);
         const logIds = await this.getLogIdsFromIndex(indexPath);
         
         if (logIds.length > 0) {
           // Fetch a sample of logs to extract server names
           const sampleLogIds = logIds.slice(0, 20); // Get more samples
+          console.log('Firebase: Fetching sample logs for servers from date:', date);
           const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
           
           sampleLogs.forEach(log => {
@@ -300,11 +308,13 @@ class FirebaseService {
       for (const date of recentDates) {
         // Try to get platforms for this server and date
         const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${server}/${date}`;
+        console.log('Firebase: Checking platforms for server:', server, 'date:', date, 'at path:', indexPath);
         const logIds = await this.getLogIdsFromIndex(indexPath);
         
         if (logIds.length > 0) {
           // Fetch a sample of logs to extract platform names
           const sampleLogIds = logIds.slice(0, 20);
+          console.log('Firebase: Fetching sample logs for platforms from server:', server, 'date:', date);
           const sampleLogs = await this.fetchLogsByIds(sampleLogIds);
           
           sampleLogs.forEach(log => {
@@ -340,10 +350,14 @@ class FirebaseService {
       
       for (const date of recentDates) {
         const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${server}/${platform}/${date}`;
+        console.log('Firebase: Checking dates for server:', server, 'platform:', platform, 'date:', date, 'at path:', indexPath);
         const logIds = await this.getLogIdsFromIndex(indexPath);
         
         if (logIds.length > 0) {
+          console.log('Firebase: Found data for date:', date, 'count:', logIds.length);
           availableDates.push(date);
+        } else {
+          console.log('Firebase: No data found for date:', date);
         }
       }
       
@@ -367,6 +381,7 @@ class FirebaseService {
       console.log('Firebase: Fetching user IDs for server:', server, 'platform:', platform, 'date:', date);
       
       const indexPath = `${INDEX_PATHS.PROJECT_SERVER_PLATFORM_DATE}/${this.project}/${server}/${platform}/${date}`;
+      console.log('Firebase: Fetching user IDs from path:', indexPath);
       const logIds = await this.getLogIdsFromIndex(indexPath);
       
       if (logIds.length === 0) {
@@ -375,6 +390,7 @@ class FirebaseService {
       }
       
       // Fetch logs to extract unique user IDs
+      console.log('Firebase: Fetching logs to extract user IDs, count:', logIds.length);
       const logs = await this.fetchLogsByIds(logIds);
       const userIdSet = new Set();
       
