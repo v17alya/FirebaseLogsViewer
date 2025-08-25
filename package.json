@@ -1,7 +1,7 @@
 {
   "name": "firebase-logs-viewer",
   "version": "1.0.0",
-  "description": "A lightweight JavaScript web app to browse, filter, group, and export logs from Firebase Realtime Database",
+  "description": "A lightweight JavaScript application for viewing and analyzing logs stored in Firebase Realtime Database using the firebase_logs.module.js schema",
   "main": "index.html",
   "scripts": {
     "dev": "npx tailwindcss -i ./src/css/input.css -o ./public/assets/styles.css --watch",
@@ -9,13 +9,15 @@
     "start": "vite",
     "start:mock": "vite --port 3001",
     "build:app": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:schema": "open test-new-schema.html"
   },
   "keywords": [
     "firebase",
     "logs",
     "viewer",
-    "javascript"
+    "javascript",
+    "realtime-database"
   ],
   "author": "",
   "license": "MIT",

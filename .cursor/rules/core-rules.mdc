@@ -10,18 +10,6 @@ alwaysApply: true
 * Connect to Firebase Realtime Database and display logs in a structured way.
 * Core functions: filtering, grouping, saving/exporting logs.
 
-#Data Path Schema
-
-* Logs are stored in Firebase under nested paths:
-  `/StreamersMegagames/{server}/{platform}/{date}/{userId}/{logIndex}/{field}`
-* Example:
-  `/StreamersMegagames/SHOLAHEYSERVER/Linux/2025-07-30/2ad48dcf-fa87-4a21-85ef-f9d583cba5c9/0/message`
-* Fields include:
-
-  * **message** → log text
-  * **nickname** → user nickname
-  * **timestamp** → time of the log
-
 #UI
 
 * Clean, minimal, and user-friendly interface.

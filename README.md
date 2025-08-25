@@ -1,221 +1,240 @@
 # Firebase Logs Viewer
 
-A lightweight JavaScript web app to browse, filter, group, and export logs from Firebase Realtime Database.
+A lightweight JavaScript application for viewing and analyzing logs stored in Firebase Realtime Database using the `firebase_logs.module.js` schema.
 
 ## Features
 
-- 🔍 **Advanced Filtering**: Filter logs by server, platform, date, user ID, nickname, and message content
-- 📊 **Grouping**: Group logs by date, server, platform, or nickname to identify patterns
-- 📤 **Export Options**: Export logs in JSON, CSV, or TXT formats
-- 📱 **Responsive Design**: Modern, clean UI that works on desktop and mobile
-- ⚡ **Real-time**: Direct connection to Firebase Realtime Database
-- 🎯 **Sorting & Pagination**: Sort logs by any field with pagination support
+- **Real-time Log Viewing**: Connect to Firebase RTDB and display logs in a structured table
+- **Advanced Filtering**: Filter logs by server, platform, date, user ID, nickname, and message content
+- **Progressive Loading**: Load filter options dynamically based on available data
+- **Sorting & Pagination**: Sort logs by any field and navigate through large datasets
+- **Export Functionality**: Export filtered logs to JSON, CSV, or TXT formats
+- **Responsive Design**: Clean, modern UI that works on desktop and mobile devices
 
 ## Data Structure
 
-Logs are stored in Firebase under the following nested path structure:
+This application works with logs stored using the `firebase_logs.module.js` schema:
+
+### Database Structure
 ```
-/StreamersMegagames/{server}/{platform}/{date}/{userId}/{logIndex}/{field}
+/logs/
+  /entries/
+    {logId}: {
+      project: string,
+      server: string,
+      platform: string,
+      date: string (YYYY-MM-DD),
+      userId: string,
+      seq: number,
+      nickname: string,
+      message: string,
+      ts: number (timestamp)
+    }
+  /indexes/
+    /byProjectDate/{project}/{date}/{logId}: true
+    /byUserDate/{userId}/{date}/{logId}: true
+    /byProjSrvPlatDate/{project}/{server}/{platform}/{date}/{logId}: true
+    /byProjectUserDate/{project}/{userId}/{date}/{logId}: true
+    /byProjectPlatformDate/{project}/{platform}/{date}/{logId}: true
+    /byProjectServerDate/{project}/{server}/{date}/{logId}: true
+    /byProject/{project}/{timestamp}_{logId}: true
+    /byProjectServer/{project}/{server}/{timestamp}_{logId}: true
+    /byProjectPlatform/{project}/{platform}/{timestamp}_{logId}: true
+    /byProjectServerPlatform/{project}/{server}/{platform}/{timestamp}_{logId}: true
+    /byProjectPlatformTs/{project}/{platform}/{timestamp}_{logId}: true
+    /byUser/{userId}/{timestamp}_{logId}: true
 ```
 
-### Example Path:
+### Log Entry Fields
+- **project**: Logical project name (e.g., "Mega")
+- **server**: Server identifier
+- **platform**: Platform name (e.g., "Linux", "Windows")
+- **date**: Date in YYYY-MM-DD format
+- **userId**: Unique user identifier
+- **seq**: Per-session sequence number
+- **nickname**: User nickname
+- **message**: Log message content
+- **ts**: Unix timestamp (milliseconds)
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd FirebaseLogsViewer
 ```
-/StreamersMegagames/SHOLAHEYSERVER/Linux/2025-07-30/2ad48dcf-fa87-4a21-85ef-f9d583cba5c9/0/message
+
+2. Install dependencies:
+```bash
+npm install
 ```
 
-### Log Fields:
-- **message** → log text content
-- **nickname** → user nickname
-- **timestamp** → time of the log entry
+3. Configure Firebase:
+   - Update `src/config/firebase-config.js` with your Firebase project configuration
+   - Ensure your Firebase RTDB has the correct structure as shown above
 
-## Quick Start
-
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
-
-### Installation
-
-1. **Clone or download the project**
-   ```bash
-   git clone <repository-url>
-   cd FirebaseLogsViewer
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Build the CSS**
-   ```bash
-   npm run build
-   ```
-
-4. **Start the development server**
-   ```bash
-   npm start
-   ```
-
-5. **Open your browser**
-   Navigate to `http://localhost:3000`
-
-### Development Mode
-
-For development with auto-reload:
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-This will watch for CSS changes and rebuild automatically.
-
-## Usage
-
-### Filtering Logs
-
-1. **Server Filter**: Select a specific server from the dropdown
-2. **Platform Filter**: Choose platform (Linux, Windows, etc.)
-3. **Date Filter**: Select a specific date
-4. **User ID Filter**: Filter by specific user ID
-5. **Nickname Filter**: Search by user nickname (text search)
-6. **Message Filter**: Search within log messages (text search)
-
-### Viewing Logs
-
-- **Table View**: Logs are displayed in a sortable table
-- **Sorting**: Click column headers or use the sort dropdown
-- **Pagination**: Navigate through large datasets
-- **Details**: Click "Details" to view full log information
-- **Full Message**: Click "..." to view complete message content
-
-### Grouping Logs
-
-1. Select a grouping option (Date, Server, Platform, or Nickname)
-2. Click "Apply Grouping"
-3. View grouped results with statistics
-4. Export individual groups if needed
-
-### Exporting Logs
-
-1. **Set filename** (optional, defaults to "logs")
-2. **Choose format**:
-   - **JSON**: Structured data format
-   - **CSV**: Spreadsheet-compatible format
-   - **TXT**: Plain text format
-3. **Click export button**
-
-Files are automatically downloaded with timestamp suffix.
+5. Open your browser and navigate to `http://localhost:5173`
 
 ## Configuration
 
 ### Firebase Configuration
 
-The app uses the following Firebase configuration (already set up):
+Update `src/config/firebase-config.js` with your Firebase project details:
 
 ```javascript
-const firebaseConfig = {
-  apiKey: "AIzaSyB1T_bGrmu7reGcsW3V70hAznbE3L_Uo8o",
-  authDomain: "logexporter-42a5f.firebaseapp.com",
-  databaseURL: "https://logexporter-42a5f-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "logexporter-42a5f",
-  storageBucket: "logexporter-42a5f.firebasestorage.app",
-  messagingSenderId: "334718041282",
-  appId: "1:334718041282:web:857f398951dd2eddfd8f5b",
-  measurementId: "G-6LGNFPT0BK"
+export const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-project.firebaseapp.com",
+  databaseURL: "https://your-project-default-rtdb.region.firebasedatabase.app",
+  projectId: "your-project-id",
+  storageBucket: "your-project.firebasestorage.app",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id",
+  measurementId: "your-measurement-id"
 };
 ```
 
-### Custom Configuration
+### Default Project
 
-To use with your own Firebase project:
+The application uses "Mega" as the default project name. You can change this in `src/config/firebase-config.js`:
 
-1. Update `src/config/firebase-config.js`
-2. Modify the `DATABASE_PATH` constant if needed
-3. Ensure your Firebase Realtime Database rules allow read access
-
-## Project Structure
-
-```
-FirebaseLogsViewer/
-├── index.html                 # Main HTML file
-├── package.json              # Dependencies and scripts
-├── tailwind.config.js        # Tailwind CSS configuration
-├── src/
-│   ├── css/
-│   │   └── input.css         # Tailwind CSS input
-│   ├── config/
-│   │   └── firebase-config.js # Firebase configuration
-│   ├── components/
-│   │   ├── FilterPanel.js    # Filter component
-│   │   ├── LogsTable.js      # Table component
-│   │   └── ExportPanel.js    # Export component
-│   ├── js/
-│   │   ├── app.js           # Main application logic
-│   │   └── firebase.js      # Firebase service
-│   └── utils/
-│       └── export-utils.js  # Export utilities
-└── public/
-    └── assets/
-        └── styles.css       # Compiled CSS
+```javascript
+export const DEFAULT_PROJECT = 'YourProjectName';
 ```
 
-## Technologies Used
+## Usage
 
-- **Frontend**: Vanilla JavaScript (ES6+)
-- **Styling**: Tailwind CSS
-- **Database**: Firebase Realtime Database
-- **Build Tool**: Tailwind CLI
-- **Development Server**: http-server
+### Filtering Logs
 
-## Browser Support
+1. **Server Filter**: Select a specific server to view logs from
+2. **Platform Filter**: Filter by platform (e.g., Linux, Windows)
+3. **Date Filter**: Select a specific date to view logs from
+4. **User ID Filter**: Search for logs from a specific user
+5. **Nickname Filter**: Filter by user nickname
+6. **Message Filter**: Search for specific text in log messages
 
-- Chrome (recommended)
-- Firefox
-- Safari
-- Edge
+### Viewing Logs
+
+- Logs are displayed in a sortable table
+- Click column headers to sort by different fields
+- Use pagination controls to navigate through large datasets
+- Click "Details" to view full log information in a modal
+- Click "..." next to long messages to view the full text
+
+### Exporting Logs
+
+1. Apply your desired filters
+2. Click the "Export" button in the export panel
+3. Choose your preferred format:
+   - **JSON**: Structured data format
+   - **CSV**: Spreadsheet-compatible format
+   - **TXT**: Plain text format with formatted log entries
+
+## API Reference
+
+### FirebaseService
+
+Main service for interacting with Firebase RTDB.
+
+#### Methods
+
+- `fetchLogs(filters)`: Fetch logs with optional filtering
+- `fetchServers()`: Get available server names
+- `fetchPlatforms(server)`: Get platforms for a specific server
+- `fetchDates(server, platform)`: Get available dates for server/platform combination
+- `fetchUserIds(server, platform, date)`: Get user IDs for specific criteria
+
+### FilterPanel
+
+Component for managing log filters.
+
+#### Methods
+
+- `getFilters()`: Get current filter values
+- `loadInitialData()`: Load initial filter options
+- `updateOptions(options)`: Update available filter options
+
+### LogsTable
+
+Component for displaying logs in a table format.
+
+#### Methods
+
+- `updateLogs(logs)`: Update the table with new log data
+- `getLogsCount()`: Get the current number of displayed logs
+
+### ExportPanel
+
+Component for exporting logs to different formats.
+
+#### Methods
+
+- `updateLogs(logs)`: Update the export panel with current logs
+
+## Development
+
+### Project Structure
+
+```
+src/
+├── components/          # UI components
+│   ├── FilterPanel.js   # Filter management
+│   ├── LogsTable.js     # Log display table
+│   └── ExportPanel.js   # Export functionality
+├── config/              # Configuration files
+│   └── firebase-config.js
+├── js/                  # Core application logic
+│   ├── app.js           # Main application
+│   └── firebase.js      # Firebase service
+└── utils/               # Utility functions
+    └── export-utils.js  # Export helpers
+```
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist/` directory.
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"Failed to initialize application"**
-   - Check internet connection
-   - Verify Firebase configuration
-   - Check browser console for errors
-
-2. **"No logs found"**
-   - Verify database path structure
-   - Check Firebase database rules
-   - Ensure data exists in the specified path
-
-3. **Export not working**
-   - Check browser download settings
-   - Ensure popup blockers are disabled
-   - Verify file permissions
+1. **No logs displayed**: Check your Firebase configuration and ensure the database structure matches the expected schema
+2. **Filter options not loading**: Verify your Firebase security rules allow read access to the logs path
+3. **Export not working**: Ensure your browser supports the File API and blob downloads
 
 ### Debug Mode
 
-Open browser developer tools (F12) to view:
-- Console logs for debugging
-- Network requests to Firebase
-- Application errors
+Enable debug logging by opening the browser console. The application logs detailed information about:
+- Firebase connection status
+- Filter operations
+- Data loading progress
+- Error conditions
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Add tests if applicable
 5. Submit a pull request
-
-## License
-
-MIT License - feel free to use this project for any purpose.
 
 ## Support
 
-For issues or questions:
+For issues and questions:
 1. Check the troubleshooting section
-2. Review browser console for errors
-3. Verify Firebase configuration
-4. Create an issue with detailed information
+2. Review the browser console for error messages
+3. Verify your Firebase configuration
+4. Open an issue on the repository

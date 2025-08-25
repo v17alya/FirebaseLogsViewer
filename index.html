@@ -1,71 +1,131 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Firebase Logs Viewer</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="stylesheet" href="./public/assets/styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h1 class="text-xl font-semibold text-gray-900">Firebase Logs Viewer</h1>
-                        <p class="text-sm text-gray-500">Browse, filter, and export logs from Firebase Realtime Database</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div id="status" class="text-sm text-gray-600">Ready</div>
-                    <div id="loading" class="hidden">
-                        <div class="flex items-center">
-                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-sm text-gray-600">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="min-h-screen">
+      <header class="bg-white border-b">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <h1 class="text-xl font-semibold">Firebase Logs Viewer</h1>
+          <div class="flex items-center gap-2">
+            <button id="btn-refresh" class="btn-secondary">Refresh</button>
+            <button id="btn-export" class="btn-primary">Export</button>
+          </div>
         </div>
-    </header>
+      </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Filter Panel -->
-        <div id="filter-panel"></div>
-
-        <!-- Export Panel -->
-        <div id="export-panel"></div>
-
-        <!-- Logs Table -->
-        <div id="logs-table"></div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="text-center text-sm text-gray-500">
-                <p>Firebase Logs Viewer - A lightweight tool for browsing and exporting Firebase Realtime Database logs</p>
-                <p class="mt-1">Built with modern web technologies</p>
+      <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+        <div id="error-banner" class="hidden bg-red-600 text-white rounded px-4 py-3"></div>
+        <section class="card" id="filters-card">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm mb-1" for="project">Project</label>
+              <div class="flex gap-2">
+                <select id="projectSelect" class="input-field flex-1"></select>
+                <input id="project" class="input-field flex-1" type="text" placeholder="Mega" />
+              </div>
             </div>
-        </div>
-    </footer>
+            <div>
+              <label class="block text-sm mb-1" for="server">Server</label>
+              <div class="flex gap-2">
+                <select id="server" class="input-field flex-1"></select>
+                <input id="serverText" class="input-field flex-1" type="text" placeholder="custom server" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="platform">Platform</label>
+              <div class="flex gap-2">
+                <select id="platform" class="input-field flex-1"></select>
+                <input id="platformText" class="input-field flex-1" type="text" placeholder="custom platform" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="date">Date</label>
+              <input id="date" class="input-field" type="date" />
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="userId">User ID</label>
+              <input id="userId" class="input-field" type="text" placeholder="user-..." />
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="nickname">Nickname</label>
+              <input id="nickname" class="input-field" type="text" placeholder="nickname" />
+            </div>
+            <div class="md:col-span-2 lg:col-span-3">
+              <label class="block text-sm mb-1" for="message">Message contains</label>
+              <input id="message" class="input-field" type="text" placeholder="search text" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="block text-sm" for="limit">Limit</label>
+              <input id="limit" class="input-field max-w-xs" type="number" value="200" min="10" step="10" />
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="uniqueness">Uniqueness</label>
+              <select id="uniqueness" class="input-field">
+                <option value="">None</option>
+                <option value="message">Unique messages in scope</option>
+                <option value="perUserMessage">Unique messages per user</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <button id="btn-clear" class="btn-secondary">Clear</button>
+            <button id="btn-apply" class="btn-primary">Apply Filters</button>
+          </div>
+        </section>
 
-    <!-- Scripts -->
-    <script type="module" src="./src/js/app.js"></script>
-</body>
-</html>
+        <section class="card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm text-gray-600">Found <span id="logs-count">0</span> logs</div>
+            <div class="flex items-center gap-2">
+              <label class="text-sm" for="groupBy">Group by</label>
+              <select id="groupBy" class="input-field">
+                <option value="">None</option>
+                <option value="date">Date</option>
+                <option value="server">Server</option>
+                <option value="nickname">Nickname</option>
+                <option value="platform">Platform</option>
+              </select>
+            </div>
+          </div>
+          <div id="logs-container" class="overflow-x-auto">
+            <!-- table injected by LogsTable component -->
+          </div>
+        </section>
+      </main>
+
+      <dialog id="details-modal" class="rounded-lg shadow-xl max-w-2xl w-full"></dialog>
+      <dialog id="export-modal" class="rounded-lg shadow-xl max-w-xs w-full">
+        <div class="p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Export logs</h3>
+            <button id="export-close" class="text-gray-600">✕</button>
+          </div>
+          <div>
+            <label class="block text-sm mb-1" for="export-filename">Filename</label>
+            <input id="export-filename" class="input-field" type="text" placeholder="logs_YYYY-MM-DD" />
+          </div>
+          <div class="space-y-2">
+            <div class="text-sm text-gray-600">Choose format</div>
+            <div class="grid grid-cols-1 gap-2">
+              <button id="export-json" class="btn-secondary">JSON</button>
+              <button id="export-csv" class="btn-secondary">CSV</button>
+              <button id="export-txt" class="btn-secondary">TXT</button>
+            </div>
+          </div>
+        </div>
+      </dialog>
+      <div id="backdrop" class="fixed inset-0 bg-black bg-opacity-50 hidden"></div>
+    </div>
+
+    <script type="module" src="/src/js/app.js"></script>
+  </body>
+  </html>
+
+

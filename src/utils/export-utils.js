@@ -30,18 +30,20 @@ export function exportToCSV(logs, filename = 'logs.csv') {
     return;
   }
 
-  const headers = ['Timestamp', 'Server', 'Platform', 'Date', 'User ID', 'Nickname', 'Message', 'Path'];
+  const headers = ['Timestamp', 'Server', 'Platform', 'Date', 'User ID', 'Nickname', 'Message', 'Project', 'Sequence', 'Log ID'];
   const csvContent = [
     headers.join(','),
     ...logs.map(log => [
-      `"${log.timestamp || ''}"`,
+      `"${formatTimestamp(log.ts || log.timestamp) || ''}"`,
       `"${log.server || ''}"`,
       `"${log.platform || ''}"`,
       `"${log.date || ''}"`,
       `"${log.userId || ''}"`,
       `"${log.nickname || ''}"`,
       `"${(log.message || '').replace(/"/g, '""')}"`,
-      `"${log.path || ''}"`
+      `"${log.project || ''}"`,
+      `"${log.seq || ''}"`,
+      `"${log.logId || ''}"`
     ].join(','))
   ].join('\n');
 
@@ -67,9 +69,9 @@ export function exportToTXT(logs, filename = 'logs.txt') {
   }
 
   const textContent = logs.map(log => {
-    return `[${log.timestamp || 'N/A'}] ${log.nickname || 'Unknown'}: ${log.message || ''}
+    return `[${formatTimestamp(log.ts || log.timestamp) || 'N/A'}] ${log.nickname || 'Unknown'}: ${log.message || ''}
   Server: ${log.server || 'N/A'} | Platform: ${log.platform || 'N/A'} | Date: ${log.date || 'N/A'} | User ID: ${log.userId || 'N/A'}
-  Path: ${log.path || 'N/A'}
+  Project: ${log.project || 'N/A'} | Sequence: ${log.seq || 'N/A'} | Log ID: ${log.logId || 'N/A'}
   ${'-'.repeat(80)}`;
   }).join('\n\n');
 
@@ -86,7 +88,7 @@ export function exportToTXT(logs, filename = 'logs.txt') {
 /**
  * Group logs by specified field
  * @param {Array} logs - Array of log entries
- * @param {string} groupBy - Field to group by ('date', 'server', 'nickname')
+ * @param {string} groupBy - Field to group by ('date', 'server', 'nickname', 'project')
  * @returns {Object} Grouped logs
  */
 export function groupLogs(logs, groupBy) {
@@ -105,17 +107,18 @@ export function groupLogs(logs, groupBy) {
 
 /**
  * Format timestamp for display
- * @param {string} timestamp - Raw timestamp
+ * @param {string|number} timestamp - Raw timestamp (can be ts field from firebase_logs.module.js)
  * @returns {string} Formatted timestamp
  */
 export function formatTimestamp(timestamp) {
   if (!timestamp) return 'N/A';
   
   try {
-    const date = new Date(timestamp);
+    // Handle both string timestamps and numeric ts from firebase_logs.module.js
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
     return date.toLocaleString();
   } catch (error) {
-    return timestamp;
+    return String(timestamp);
   }
 }
 

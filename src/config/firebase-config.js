@@ -14,28 +14,34 @@ export const firebaseConfig = {
 };
 
 /**
- * Project name for logs
- * @type {string}
- */
-export const PROJECT_NAME = 'StreamersMegagames';
-
-/**
- * New schema constants
+ * New schema constants based on firebase_logs.module.js
  * @type {Object}
  */
-export const LOGS_PATH = 'logs';
+export const LOGS_PATH = 'test/logs';
+export const FOLDER_ENTRIES = 'entries';
+export const FOLDER_INDEXES = 'indexes';
+
+/**
+ * Index paths based on firebase_logs.module.js structure
+ * @type {Object}
+ */
 export const INDEX_PATHS = {
-  PROJECT_DATE: 'idx_by_project_date',
-  USER_DATE: 'idx_by_user_date',
-  PROJECT_SERVER_PLATFORM_DATE: 'idx_by_proj_srv_plat_date',
-  PROJECT_USER_DATE: 'idx_by_project_user_date',
-  PROJECT_TS: 'idx_by_project_ts',
-  PROJECT_PLATFORM_DATE: 'idx_by_project_platform_date',
-  PROJECT_PLATFORM_TS: 'idx_by_project_platform_ts'
+  BY_PROJECT_DATE: 'byProjectDate',
+  BY_USER_DATE: 'byUserDate', 
+  BY_PROJ_SRV_PLAT_DATE: 'byProjSrvPlatDate',
+  BY_PROJECT_USER_DATE: 'byProjectUserDate',
+  BY_PROJECT_PLATFORM_DATE: 'byProjectPlatformDate',
+  BY_PROJECT_SERVER_DATE: 'byProjectServerDate',
+  BY_PROJECT: 'byProject',
+  BY_PROJECT_SERVER: 'byProjectServer',
+  BY_PROJECT_PLATFORM: 'byProjectPlatform',
+  BY_PROJECT_PLATFORM_TS: 'byProjectPlatformTs',
+  BY_PROJECT_SERVER_PLATFORM: 'byProjectServerPlatform',
+  BY_USER: 'byUser'
 };
 
 /**
- * Available log fields (updated for new schema)
+ * Available log fields based on firebase_logs.module.js
  * @type {Object}
  */
 export const LOG_FIELDS = {
@@ -49,3 +55,9 @@ export const LOG_FIELDS = {
   MESSAGE: 'message',
   TS: 'ts'
 };
+
+/**
+ * Default project name from firebase_logs.module.js
+ * @type {string}
+ */
+export const DEFAULT_PROJECT = 'Mega';
