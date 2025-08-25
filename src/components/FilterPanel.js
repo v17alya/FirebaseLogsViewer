@@ -48,9 +48,9 @@ export class FilterPanel {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Platform</label>
             <div class="relative">
-              <input type="text" id="platform-search" class="input-field pr-8" placeholder="Search platforms...">
-              <select id="platform-filter" class="input-field mt-2">
-                <option value="">All Platforms</option>
+              <input type="text" id="platform-search" class="input-field pr-8 opacity-50 cursor-not-allowed" placeholder="Select server first..." disabled>
+              <select id="platform-filter" class="input-field mt-2 opacity-50 cursor-not-allowed" disabled>
+                <option value="">Select server first</option>
               </select>
             </div>
           </div>
@@ -59,9 +59,9 @@ export class FilterPanel {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
             <div class="relative">
-              <input type="text" id="date-search" class="input-field pr-8" placeholder="Search dates...">
-              <select id="date-filter" class="input-field mt-2">
-                <option value="">All Dates</option>
+              <input type="text" id="date-search" class="input-field pr-8 opacity-50 cursor-not-allowed" placeholder="Select platform first..." disabled>
+              <select id="date-filter" class="input-field mt-2 opacity-50 cursor-not-allowed" disabled>
+                <option value="">Select platform first</option>
               </select>
             </div>
           </div>
@@ -70,9 +70,9 @@ export class FilterPanel {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">User ID</label>
             <div class="relative">
-              <input type="text" id="userid-search" class="input-field pr-8" placeholder="Search user IDs...">
-              <select id="userid-filter" class="input-field mt-2">
-                <option value="">All Users</option>
+              <input type="text" id="userid-search" class="input-field pr-8 opacity-50 cursor-not-allowed" placeholder="Select date first..." disabled>
+              <select id="userid-filter" class="input-field mt-2 opacity-50 cursor-not-allowed" disabled>
+                <option value="">Select date first</option>
               </select>
             </div>
           </div>
@@ -145,23 +145,33 @@ export class FilterPanel {
 
     serverSelect.addEventListener('change', async (e) => {
       const server = e.target.value;
+      console.log('Server selected:', server);
+      
       if (server) {
-        // Clear dependent dropdowns
+        // Clear and disable dependent dropdowns
         platformSelect.value = '';
         dateSelect.value = '';
         userIdSelect.value = '';
         this.updateSelectOptions('platform', []);
         this.updateSelectOptions('date', []);
         this.updateSelectOptions('userid', []);
+        this.disableDependentFields();
         
+        console.log('Loading platforms for server:', server);
         // Load platforms for selected server
         await this.loadPlatforms(server);
+        this.enablePlatformFields();
+        console.log('Platforms loaded and fields enabled');
+      } else {
+        this.disableDependentFields();
       }
     });
 
     platformSelect.addEventListener('change', async (e) => {
       const platform = e.target.value;
       const server = serverSelect.value;
+      console.log('Platform selected:', platform, 'for server:', server);
+      
       if (platform && server) {
         // Clear dependent dropdowns
         dateSelect.value = '';
@@ -169,8 +179,29 @@ export class FilterPanel {
         this.updateSelectOptions('date', []);
         this.updateSelectOptions('userid', []);
         
+        // Disable date and user ID fields
+        const dateSearch = this.container.querySelector('#date-search');
+        const dateSelect = this.container.querySelector('#date-filter');
+        const userIdSearch = this.container.querySelector('#userid-search');
+        const userIdSelect = this.container.querySelector('#userid-filter');
+        
+        dateSearch.disabled = true;
+        dateSearch.classList.add('opacity-50', 'cursor-not-allowed');
+        dateSearch.placeholder = 'Select platform first...';
+        dateSelect.disabled = true;
+        dateSelect.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        userIdSearch.disabled = true;
+        userIdSearch.classList.add('opacity-50', 'cursor-not-allowed');
+        userIdSearch.placeholder = 'Select date first...';
+        userIdSelect.disabled = true;
+        userIdSelect.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        console.log('Loading dates for server:', server, 'platform:', platform);
         // Load dates for selected server and platform
         await this.loadDates(server, platform);
+        this.enableDateFields();
+        console.log('Dates loaded and fields enabled');
       }
     });
 
@@ -178,13 +209,28 @@ export class FilterPanel {
       const date = e.target.value;
       const server = serverSelect.value;
       const platform = platformSelect.value;
+      console.log('Date selected:', date, 'for server:', server, 'platform:', platform);
+      
       if (date && server && platform) {
         // Clear dependent dropdowns
         userIdSelect.value = '';
         this.updateSelectOptions('userid', []);
         
+        // Disable user ID fields
+        const userIdSearch = this.container.querySelector('#userid-search');
+        const userIdSelect = this.container.querySelector('#userid-filter');
+        
+        userIdSearch.disabled = true;
+        userIdSearch.classList.add('opacity-50', 'cursor-not-allowed');
+        userIdSearch.placeholder = 'Select date first...';
+        userIdSelect.disabled = true;
+        userIdSelect.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        console.log('Loading user IDs for server:', server, 'platform:', platform, 'date:', date);
         // Load user IDs for selected server, platform, and date
         await this.loadUserIds(server, platform, date);
+        this.enableUserIdFields();
+        console.log('User IDs loaded and fields enabled');
       }
     });
   }
@@ -250,8 +296,10 @@ export class FilterPanel {
    * Load servers initially
    */
   async loadInitialData() {
+    console.log('Loading initial servers...');
     if (this.onLoadOptions) {
       const servers = await this.onLoadOptions('servers');
+      console.log('Servers loaded:', servers);
       this.updateOptions({ servers });
     }
   }
@@ -261,8 +309,10 @@ export class FilterPanel {
    * @param {string} server - Selected server
    */
   async loadPlatforms(server) {
+    console.log('Loading platforms for server:', server);
     if (this.onLoadOptions && server) {
       const platforms = await this.onLoadOptions('platforms', server);
+      console.log('Platforms loaded:', platforms);
       this.updateOptions({ platforms });
     }
   }
@@ -273,8 +323,10 @@ export class FilterPanel {
    * @param {string} platform - Selected platform
    */
   async loadDates(server, platform) {
+    console.log('Loading dates for server:', server, 'platform:', platform);
     if (this.onLoadOptions && server && platform) {
       const dates = await this.onLoadOptions('dates', server, platform);
+      console.log('Dates loaded:', dates);
       this.updateOptions({ dates });
     }
   }
@@ -286,10 +338,90 @@ export class FilterPanel {
    * @param {string} date - Selected date
    */
   async loadUserIds(server, platform, date) {
+    console.log('Loading user IDs for server:', server, 'platform:', platform, 'date:', date);
     if (this.onLoadOptions && server && platform && date) {
       const userIds = await this.onLoadOptions('userIds', server, platform, date);
+      console.log('User IDs loaded:', userIds);
       this.updateOptions({ userIds });
     }
+  }
+
+  /**
+   * Enable platform fields
+   */
+  enablePlatformFields() {
+    const platformSearch = this.container.querySelector('#platform-search');
+    const platformSelect = this.container.querySelector('#platform-filter');
+    
+    platformSearch.disabled = false;
+    platformSearch.classList.remove('opacity-50', 'cursor-not-allowed');
+    platformSearch.placeholder = 'Search platforms...';
+    
+    platformSelect.disabled = false;
+    platformSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+
+  /**
+   * Enable date fields
+   */
+  enableDateFields() {
+    const dateSearch = this.container.querySelector('#date-search');
+    const dateSelect = this.container.querySelector('#date-filter');
+    
+    dateSearch.disabled = false;
+    dateSearch.classList.remove('opacity-50', 'cursor-not-allowed');
+    dateSearch.placeholder = 'Search dates...';
+    
+    dateSelect.disabled = false;
+    dateSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+
+  /**
+   * Enable user ID fields
+   */
+  enableUserIdFields() {
+    const userIdSearch = this.container.querySelector('#userid-search');
+    const userIdSelect = this.container.querySelector('#userid-filter');
+    
+    userIdSearch.disabled = false;
+    userIdSearch.classList.remove('opacity-50', 'cursor-not-allowed');
+    userIdSearch.placeholder = 'Search user IDs...';
+    
+    userIdSelect.disabled = false;
+    userIdSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+
+  /**
+   * Disable all dependent fields
+   */
+  disableDependentFields() {
+    const platformSearch = this.container.querySelector('#platform-search');
+    const platformSelect = this.container.querySelector('#platform-filter');
+    const dateSearch = this.container.querySelector('#date-search');
+    const dateSelect = this.container.querySelector('#date-filter');
+    const userIdSearch = this.container.querySelector('#userid-search');
+    const userIdSelect = this.container.querySelector('#userid-filter');
+
+    // Disable platform fields
+    platformSearch.disabled = true;
+    platformSearch.classList.add('opacity-50', 'cursor-not-allowed');
+    platformSearch.placeholder = 'Select server first...';
+    platformSelect.disabled = true;
+    platformSelect.classList.add('opacity-50', 'cursor-not-allowed');
+
+    // Disable date fields
+    dateSearch.disabled = true;
+    dateSearch.classList.add('opacity-50', 'cursor-not-allowed');
+    dateSearch.placeholder = 'Select platform first...';
+    dateSelect.disabled = true;
+    dateSelect.classList.add('opacity-50', 'cursor-not-allowed');
+
+    // Disable user ID fields
+    userIdSearch.disabled = true;
+    userIdSearch.classList.add('opacity-50', 'cursor-not-allowed');
+    userIdSearch.placeholder = 'Select date first...';
+    userIdSelect.disabled = true;
+    userIdSelect.classList.add('opacity-50', 'cursor-not-allowed');
   }
 
   /**

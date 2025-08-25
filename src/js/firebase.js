@@ -66,13 +66,17 @@ class FirebaseService {
    */
   async fetchServers() {
     try {
+      console.log('Firebase: Fetching servers from', this.baseRef.toString());
       const snapshot = await get(this.baseRef);
       if (!snapshot.exists()) {
+        console.log('Firebase: No servers found');
         return [];
       }
-      return Object.keys(snapshot.val()).sort();
+      const servers = Object.keys(snapshot.val()).sort();
+      console.log('Firebase: Servers found:', servers);
+      return servers;
     } catch (error) {
-      console.error('Error fetching servers:', error);
+      console.error('Firebase: Error fetching servers:', error);
       return [];
     }
   }
