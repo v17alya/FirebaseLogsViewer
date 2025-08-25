@@ -201,6 +201,10 @@ class FirebaseService {
     if (filters.platform && logEntry.platform !== filters.platform) return false;
     if (filters.date && logEntry.date !== filters.date) return false;
     if (filters.userId && logEntry.userId !== filters.userId) return false;
+    
+    // Quick user search - search in userId field
+    if (filters.quickUserId && !logEntry.userId.toLowerCase().includes(filters.quickUserId.toLowerCase())) return false;
+    
     if (filters.nickname && !logEntry.nickname.toLowerCase().includes(filters.nickname.toLowerCase())) return false;
     if (filters.message && !logEntry.message.toLowerCase().includes(filters.message.toLowerCase())) return false;
     

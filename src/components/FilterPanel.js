@@ -66,28 +66,34 @@ export class FilterPanel {
             </div>
           </div>
 
-          <!-- User ID Filter -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">User ID</label>
-            <div class="relative">
-              <input type="text" id="userid-search" class="input-field pr-8 opacity-50 cursor-not-allowed" placeholder="Select date first..." disabled>
-              <select id="userid-filter" class="input-field mt-2 opacity-50 cursor-not-allowed" disabled>
-                <option value="">Select date first</option>
-              </select>
+                      <!-- User ID Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">User ID</label>
+              <div class="relative">
+                <input type="text" id="userid-search" class="input-field pr-8 opacity-50 cursor-not-allowed" placeholder="Select date first..." disabled>
+                <select id="userid-filter" class="input-field mt-2 opacity-50 cursor-not-allowed" disabled>
+                  <option value="">Select date first</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <!-- Nickname Filter -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nickname</label>
-            <input type="text" id="nickname-filter" class="input-field" placeholder="Search by nickname...">
-          </div>
+            <!-- Quick User Search -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Quick User Search</label>
+              <input type="text" id="quick-user-search" class="input-field" placeholder="Search by User ID (anywhere)...">
+            </div>
 
-          <!-- Message Filter -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
-            <input type="text" id="message-filter" class="input-field" placeholder="Search in messages...">
-          </div>
+            <!-- Nickname Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Nickname</label>
+              <input type="text" id="nickname-filter" class="input-field" placeholder="Search by nickname...">
+            </div>
+
+            <!-- Message Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+              <input type="text" id="message-filter" class="input-field" placeholder="Search in messages...">
+            </div>
 
           <!-- Date Range Filter -->
           <div>
@@ -103,7 +109,10 @@ export class FilterPanel {
         </div>
 
         <div class="flex gap-3 mt-4">
-          <button id="apply-filters" class="btn-primary">
+          <button id="load-logs" class="btn-primary">
+            Load Logs
+          </button>
+          <button id="apply-filters" class="btn-secondary">
             Apply Filters
           </button>
           <button id="clear-filters" class="btn-secondary">
@@ -120,15 +129,17 @@ export class FilterPanel {
    * Attach event listeners to filter elements
    */
   attachEventListeners() {
+    const loadBtn = this.container.querySelector('#load-logs');
     const applyBtn = this.container.querySelector('#apply-filters');
     const clearBtn = this.container.querySelector('#clear-filters');
     
+    loadBtn.addEventListener('click', () => this.loadLogs());
     applyBtn.addEventListener('click', () => this.applyFilters());
     clearBtn.addEventListener('click', () => this.clearFilters());
 
-    // Auto-apply filters on input change
-    const inputs = this.container.querySelectorAll('input, select');
-    inputs.forEach(input => {
+    // Auto-apply filters only on text input changes (nickname, message, quick user search)
+    const textInputs = this.container.querySelectorAll('#nickname-filter, #message-filter, #quick-user-search');
+    textInputs.forEach(input => {
       input.addEventListener('change', () => this.applyFilters());
       input.addEventListener('keyup', (e) => {
         if (e.key === 'Enter') {
@@ -251,6 +262,25 @@ export class FilterPanel {
   }
 
   /**
+   * Load logs with current filters
+   */
+  loadLogs() {
+    this.filters = {
+      server: this.container.querySelector('#server-filter').value,
+      platform: this.container.querySelector('#platform-filter').value,
+      date: this.container.querySelector('#date-filter').value,
+      userId: this.container.querySelector('#userid-filter').value,
+      quickUserId: this.container.querySelector('#quick-user-search').value,
+      nickname: this.container.querySelector('#nickname-filter').value,
+      message: this.container.querySelector('#message-filter').value,
+      monthsBack: parseInt(this.container.querySelector('#months-back').value) || 3
+    };
+
+    console.log('Loading logs with filters:', this.filters);
+    this.onFiltersChange(this.filters);
+  }
+
+  /**
    * Apply current filters
    */
   applyFilters() {
@@ -259,6 +289,7 @@ export class FilterPanel {
       platform: this.container.querySelector('#platform-filter').value,
       date: this.container.querySelector('#date-filter').value,
       userId: this.container.querySelector('#userid-filter').value,
+      quickUserId: this.container.querySelector('#quick-user-search').value,
       nickname: this.container.querySelector('#nickname-filter').value,
       message: this.container.querySelector('#message-filter').value,
       monthsBack: parseInt(this.container.querySelector('#months-back').value) || 3
@@ -276,6 +307,7 @@ export class FilterPanel {
       platform: '',
       date: '',
       userId: '',
+      quickUserId: '',
       nickname: '',
       message: '',
       monthsBack: 3
@@ -286,6 +318,7 @@ export class FilterPanel {
     this.container.querySelector('#platform-filter').value = '';
     this.container.querySelector('#date-filter').value = '';
     this.container.querySelector('#userid-filter').value = '';
+    this.container.querySelector('#quick-user-search').value = '';
     this.container.querySelector('#nickname-filter').value = '';
     this.container.querySelector('#message-filter').value = '';
     this.container.querySelector('#months-back').value = '3';
