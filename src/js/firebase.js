@@ -26,32 +26,46 @@ class FirebaseService {
    */
   async fetchLogs(filters = {}) {
     try {
+      console.log('Firebase: Fetching logs with filters:', filters);
+      
       let logsRef = this.baseRef;
       
       // Apply path filters
       if (filters.server) {
         logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}`);
+        console.log('Firebase: Using server path:', logsRef.toString());
       }
       
       if (filters.platform && filters.server) {
         logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}/${filters.platform}`);
+        console.log('Firebase: Using platform path:', logsRef.toString());
       }
       
       if (filters.date && filters.server && filters.platform) {
         logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}/${filters.platform}/${filters.date}`);
+        console.log('Firebase: Using date path:', logsRef.toString());
+      }
+      
+      if (filters.userId && filters.server && filters.platform && filters.date) {
+        logsRef = ref(this.database, `${DATABASE_PATH}/${filters.server}/${filters.platform}/${filters.date}/${filters.userId}`);
+        console.log('Firebase: Using userId path:', logsRef.toString());
       }
 
+      console.log('Firebase: Final path for fetching:', logsRef.toString());
       const snapshot = await get(logsRef);
       
       if (!snapshot.exists()) {
+        console.log('Firebase: No data found at path');
         return [];
       }
 
       const logs = [];
       const data = snapshot.val();
+      console.log('Firebase: Data structure at path:', Object.keys(data || {}));
 
       // Recursively traverse the data structure to find log entries
       this.extractLogs(data, logs, filters);
+      console.log('Firebase: Extracted logs count:', logs.length);
 
       return logs;
     } catch (error) {
@@ -163,12 +177,18 @@ class FirebaseService {
         ...this.extractPathInfo(path)
       };
 
+      console.log('Firebase: Found log entry at path:', path.join('/'), 'with data:', logEntry);
+
       // Apply filters
       if (this.matchesFilters(logEntry, filters)) {
+        console.log('Firebase: Log entry matches filters, adding to results');
         logs.push(logEntry);
+      } else {
+        console.log('Firebase: Log entry does not match filters');
       }
     } else {
       // Continue traversing
+      console.log('Firebase: Traversing path:', path.join('/'), 'with keys:', Object.keys(data));
       Object.keys(data).forEach(key => {
         this.extractLogs(data[key], logs, filters, [...path, key]);
       });
@@ -197,16 +217,40 @@ class FirebaseService {
    * @returns {boolean} True if log matches all filters
    */
   matchesFilters(logEntry, filters) {
-    if (filters.server && logEntry.server !== filters.server) return false;
-    if (filters.platform && logEntry.platform !== filters.platform) return false;
-    if (filters.date && logEntry.date !== filters.date) return false;
-    if (filters.userId && logEntry.userId !== filters.userId) return false;
+    console.log('Firebase: Checking filters for log entry:', logEntry);
+    console.log('Firebase: Applied filters:', filters);
+    
+    if (filters.server && logEntry.server !== filters.server) {
+      console.log('Firebase: Server filter failed - expected:', filters.server, 'got:', logEntry.server);
+      return false;
+    }
+    if (filters.platform && logEntry.platform !== filters.platform) {
+      console.log('Firebase: Platform filter failed - expected:', filters.platform, 'got:', logEntry.platform);
+      return false;
+    }
+    if (filters.date && logEntry.date !== filters.date) {
+      console.log('Firebase: Date filter failed - expected:', filters.date, 'got:', logEntry.date);
+      return false;
+    }
+    if (filters.userId && logEntry.userId !== filters.userId) {
+      console.log('Firebase: UserId filter failed - expected:', filters.userId, 'got:', logEntry.userId);
+      return false;
+    }
     
     // Quick user search - search in userId field
-    if (filters.quickUserId && !logEntry.userId.toLowerCase().includes(filters.quickUserId.toLowerCase())) return false;
+    if (filters.quickUserId && !logEntry.userId.toLowerCase().includes(filters.quickUserId.toLowerCase())) {
+      console.log('Firebase: QuickUserId filter failed');
+      return false;
+    }
     
-    if (filters.nickname && !logEntry.nickname.toLowerCase().includes(filters.nickname.toLowerCase())) return false;
-    if (filters.message && !logEntry.message.toLowerCase().includes(filters.message.toLowerCase())) return false;
+    if (filters.nickname && !logEntry.nickname.toLowerCase().includes(filters.nickname.toLowerCase())) {
+      console.log('Firebase: Nickname filter failed');
+      return false;
+    }
+    if (filters.message && !logEntry.message.toLowerCase().includes(filters.message.toLowerCase())) {
+      console.log('Firebase: Message filter failed');
+      return false;
+    }
     
     // Date range filter
     if (filters.monthsBack) {
@@ -214,9 +258,13 @@ class FirebaseService {
       const cutoffDate = new Date();
       cutoffDate.setMonth(cutoffDate.getMonth() - filters.monthsBack);
       
-      if (logDate < cutoffDate) return false;
+      if (logDate < cutoffDate) {
+        console.log('Firebase: Date range filter failed - log date:', logDate, 'cutoff:', cutoffDate);
+        return false;
+      }
     }
     
+    console.log('Firebase: All filters passed');
     return true;
   }
 
