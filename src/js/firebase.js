@@ -61,6 +61,83 @@ class FirebaseService {
   }
 
   /**
+   * Fetch available servers only
+   * @returns {Promise<Array>} Array of server names
+   */
+  async fetchServers() {
+    try {
+      const snapshot = await get(this.baseRef);
+      if (!snapshot.exists()) {
+        return [];
+      }
+      return Object.keys(snapshot.val()).sort();
+    } catch (error) {
+      console.error('Error fetching servers:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch platforms for a specific server
+   * @param {string} server - Server name
+   * @returns {Promise<Array>} Array of platform names
+   */
+  async fetchPlatforms(server) {
+    try {
+      const serverRef = ref(this.database, `${DATABASE_PATH}/${server}`);
+      const snapshot = await get(serverRef);
+      if (!snapshot.exists()) {
+        return [];
+      }
+      return Object.keys(snapshot.val()).sort();
+    } catch (error) {
+      console.error('Error fetching platforms:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch dates for a specific server and platform
+   * @param {string} server - Server name
+   * @param {string} platform - Platform name
+   * @returns {Promise<Array>} Array of date strings
+   */
+  async fetchDates(server, platform) {
+    try {
+      const platformRef = ref(this.database, `${DATABASE_PATH}/${server}/${platform}`);
+      const snapshot = await get(platformRef);
+      if (!snapshot.exists()) {
+        return [];
+      }
+      return Object.keys(snapshot.val()).sort();
+    } catch (error) {
+      console.error('Error fetching dates:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch user IDs for a specific server, platform, and date
+   * @param {string} server - Server name
+   * @param {string} platform - Platform name
+   * @param {string} date - Date string
+   * @returns {Promise<Array>} Array of user IDs
+   */
+  async fetchUserIds(server, platform, date) {
+    try {
+      const dateRef = ref(this.database, `${DATABASE_PATH}/${server}/${platform}/${date}`);
+      const snapshot = await get(dateRef);
+      if (!snapshot.exists()) {
+        return [];
+      }
+      return Object.keys(snapshot.val()).sort();
+    } catch (error) {
+      console.error('Error fetching user IDs:', error);
+      return [];
+    }
+  }
+
+  /**
    * Extract log entries from nested data structure
    * @param {Object} data - Data to traverse
    * @param {Array} logs - Array to store extracted logs

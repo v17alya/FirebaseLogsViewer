@@ -27,9 +27,9 @@ class FirebaseLogsViewer {
       this.setupGlobalFunctions();
       this.showLoadingState();
       
-      // Load initial data
-      await this.loadFilterOptions();
-      await this.loadLogs();
+      // Load initial data - only servers first
+      await this.filterPanel.loadInitialData();
+      // Don't load logs initially - wait for user selection
       
       this.hideLoadingState();
     } catch (error) {
@@ -52,6 +52,8 @@ class FirebaseLogsViewer {
 
     this.filterPanel = new FilterPanel(filterContainer, (filters) => {
       this.onFiltersChange(filters);
+    }, (type, ...params) => {
+      return this.loadFilterOptions(type, ...params);
     });
 
     this.logsTable = new LogsTable(logsContainer);
@@ -142,6 +144,32 @@ class FirebaseLogsViewer {
     } catch (error) {
       console.error('Failed to load filter options:', error);
       // Continue without filter options
+    }
+  }
+
+  /**
+   * Load specific filter options progressively
+   * @param {string} type - Type of options to load
+   * @param {...string} params - Additional parameters
+   * @returns {Promise<Array>} Array of options
+   */
+  async loadFilterOptions(type, ...params) {
+    try {
+      switch (type) {
+        case 'servers':
+          return await this.firebaseService.fetchServers();
+        case 'platforms':
+          return await this.firebaseService.fetchPlatforms(params[0]);
+        case 'dates':
+          return await this.firebaseService.fetchDates(params[0], params[1]);
+        case 'userIds':
+          return await this.firebaseService.fetchUserIds(params[0], params[1], params[2]);
+        default:
+          return [];
+      }
+    } catch (error) {
+      console.error(`Failed to load ${type} options:`, error);
+      return [];
     }
   }
 

@@ -2,9 +2,10 @@
  * Filter panel component for log filtering
  */
 export class FilterPanel {
-  constructor(container, onFiltersChange) {
+  constructor(container, onFiltersChange, onLoadOptions) {
     this.container = container;
     this.onFiltersChange = onFiltersChange;
+    this.onLoadOptions = onLoadOptions;
     this.filters = {
       server: '',
       platform: '',
@@ -135,6 +136,57 @@ export class FilterPanel {
         }
       });
     });
+
+    // Progressive loading for dropdowns
+    const serverSelect = this.container.querySelector('#server-filter');
+    const platformSelect = this.container.querySelector('#platform-filter');
+    const dateSelect = this.container.querySelector('#date-filter');
+    const userIdSelect = this.container.querySelector('#userid-filter');
+
+    serverSelect.addEventListener('change', async (e) => {
+      const server = e.target.value;
+      if (server) {
+        // Clear dependent dropdowns
+        platformSelect.value = '';
+        dateSelect.value = '';
+        userIdSelect.value = '';
+        this.updateSelectOptions('platform', []);
+        this.updateSelectOptions('date', []);
+        this.updateSelectOptions('userid', []);
+        
+        // Load platforms for selected server
+        await this.loadPlatforms(server);
+      }
+    });
+
+    platformSelect.addEventListener('change', async (e) => {
+      const platform = e.target.value;
+      const server = serverSelect.value;
+      if (platform && server) {
+        // Clear dependent dropdowns
+        dateSelect.value = '';
+        userIdSelect.value = '';
+        this.updateSelectOptions('date', []);
+        this.updateSelectOptions('userid', []);
+        
+        // Load dates for selected server and platform
+        await this.loadDates(server, platform);
+      }
+    });
+
+    dateSelect.addEventListener('change', async (e) => {
+      const date = e.target.value;
+      const server = serverSelect.value;
+      const platform = platformSelect.value;
+      if (date && server && platform) {
+        // Clear dependent dropdowns
+        userIdSelect.value = '';
+        this.updateSelectOptions('userid', []);
+        
+        // Load user IDs for selected server, platform, and date
+        await this.loadUserIds(server, platform, date);
+      }
+    });
   }
 
   /**
@@ -192,6 +244,52 @@ export class FilterPanel {
     this.updateSelectOptions('platform', this.filterOptions.platforms);
     this.updateSelectOptions('date', this.filterOptions.dates);
     this.updateSelectOptions('userid', this.filterOptions.userIds);
+  }
+
+  /**
+   * Load servers initially
+   */
+  async loadInitialData() {
+    if (this.onLoadOptions) {
+      const servers = await this.onLoadOptions('servers');
+      this.updateOptions({ servers });
+    }
+  }
+
+  /**
+   * Load platforms when server is selected
+   * @param {string} server - Selected server
+   */
+  async loadPlatforms(server) {
+    if (this.onLoadOptions && server) {
+      const platforms = await this.onLoadOptions('platforms', server);
+      this.updateOptions({ platforms });
+    }
+  }
+
+  /**
+   * Load dates when platform is selected
+   * @param {string} server - Selected server
+   * @param {string} platform - Selected platform
+   */
+  async loadDates(server, platform) {
+    if (this.onLoadOptions && server && platform) {
+      const dates = await this.onLoadOptions('dates', server, platform);
+      this.updateOptions({ dates });
+    }
+  }
+
+  /**
+   * Load user IDs when date is selected
+   * @param {string} server - Selected server
+   * @param {string} platform - Selected platform
+   * @param {string} date - Selected date
+   */
+  async loadUserIds(server, platform, date) {
+    if (this.onLoadOptions && server && platform && date) {
+      const userIds = await this.onLoadOptions('userIds', server, platform, date);
+      this.updateOptions({ userIds });
+    }
   }
 
   /**
