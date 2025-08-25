@@ -147,7 +147,7 @@ export class FilterPanel {
       const server = e.target.value;
       console.log('Server selected:', server);
       
-      if (server) {
+      if (server && server !== '') {
         // Clear and disable dependent dropdowns
         platformSelect.value = '';
         dateSelect.value = '';
@@ -163,6 +163,7 @@ export class FilterPanel {
         this.enablePlatformFields();
         console.log('Platforms loaded and fields enabled');
       } else {
+        console.log('Server cleared, disabling dependent fields');
         this.disableDependentFields();
       }
     });
@@ -172,7 +173,7 @@ export class FilterPanel {
       const server = serverSelect.value;
       console.log('Platform selected:', platform, 'for server:', server);
       
-      if (platform && server) {
+      if (platform && platform !== '' && server && server !== '') {
         // Clear dependent dropdowns
         dateSelect.value = '';
         userIdSelect.value = '';
@@ -202,6 +203,9 @@ export class FilterPanel {
         await this.loadDates(server, platform);
         this.enableDateFields();
         console.log('Dates loaded and fields enabled');
+      } else if (platform === '' || platform === undefined) {
+        console.log('Platform cleared, disabling dependent fields');
+        this.disableDependentFields();
       }
     });
 
@@ -211,7 +215,7 @@ export class FilterPanel {
       const platform = platformSelect.value;
       console.log('Date selected:', date, 'for server:', server, 'platform:', platform);
       
-      if (date && server && platform) {
+      if (date && date !== '' && server && server !== '' && platform && platform !== '') {
         // Clear dependent dropdowns
         userIdSelect.value = '';
         this.updateSelectOptions('userid', []);
@@ -231,6 +235,17 @@ export class FilterPanel {
         await this.loadUserIds(server, platform, date);
         this.enableUserIdFields();
         console.log('User IDs loaded and fields enabled');
+      } else if (date === '' || date === undefined) {
+        console.log('Date cleared, disabling user ID fields');
+        // Disable user ID fields
+        const userIdSearch = this.container.querySelector('#userid-search');
+        const userIdSelect = this.container.querySelector('#userid-filter');
+        
+        userIdSearch.disabled = true;
+        userIdSearch.classList.add('opacity-50', 'cursor-not-allowed');
+        userIdSearch.placeholder = 'Select date first...';
+        userIdSelect.disabled = true;
+        userIdSelect.classList.add('opacity-50', 'cursor-not-allowed');
       }
     });
   }
@@ -283,7 +298,7 @@ export class FilterPanel {
    * @param {Object} options - Filter options
    */
   updateOptions(options) {
-    // Store current values before updating
+    // Store current values before updating (only non-empty values)
     const currentServer = this.container.querySelector('#server-filter').value;
     const currentPlatform = this.container.querySelector('#platform-filter').value;
     const currentDate = this.container.querySelector('#date-filter').value;
@@ -299,20 +314,20 @@ export class FilterPanel {
     this.updateSelectOptions('date', this.filterOptions.dates);
     this.updateSelectOptions('userid', this.filterOptions.userIds);
     
-    // Restore current values after updating
-    if (currentServer) {
+    // Restore current values after updating (only if they were not empty)
+    if (currentServer && currentServer !== '') {
       this.container.querySelector('#server-filter').value = currentServer;
       console.log('updateOptions: Restored server value to:', currentServer);
     }
-    if (currentPlatform) {
+    if (currentPlatform && currentPlatform !== '') {
       this.container.querySelector('#platform-filter').value = currentPlatform;
       console.log('updateOptions: Restored platform value to:', currentPlatform);
     }
-    if (currentDate) {
+    if (currentDate && currentDate !== '') {
       this.container.querySelector('#date-filter').value = currentDate;
       console.log('updateOptions: Restored date value to:', currentDate);
     }
-    if (currentUserId) {
+    if (currentUserId && currentUserId !== '') {
       this.container.querySelector('#userid-filter').value = currentUserId;
       console.log('updateOptions: Restored userId value to:', currentUserId);
     }
