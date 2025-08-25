@@ -193,9 +193,7 @@ export class FilterPanel {
         
         // Disable date and user ID fields
         const dateSearch = this.container.querySelector('#date-search');
-        const dateSelect = this.container.querySelector('#date-filter');
         const userIdSearch = this.container.querySelector('#userid-search');
-        const userIdSelect = this.container.querySelector('#userid-filter');
         
         dateSearch.disabled = true;
         dateSearch.classList.add('opacity-50', 'cursor-not-allowed');
@@ -233,7 +231,6 @@ export class FilterPanel {
         
         // Disable user ID fields
         const userIdSearch = this.container.querySelector('#userid-search');
-        const userIdSelect = this.container.querySelector('#userid-filter');
         
         userIdSearch.disabled = true;
         userIdSearch.classList.add('opacity-50', 'cursor-not-allowed');
@@ -250,7 +247,6 @@ export class FilterPanel {
         console.log('Date cleared, disabling user ID fields');
         // Disable user ID fields
         const userIdSearch = this.container.querySelector('#userid-search');
-        const userIdSelect = this.container.querySelector('#userid-filter');
         
         userIdSearch.disabled = true;
         userIdSearch.classList.add('opacity-50', 'cursor-not-allowed');
