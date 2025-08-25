@@ -87,6 +87,18 @@ export class FilterPanel {
             <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
             <input type="text" id="message-filter" class="input-field" placeholder="Search in messages...">
           </div>
+
+          <!-- Date Range Filter -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <select id="months-back" class="input-field">
+              <option value="1">Last 1 month</option>
+              <option value="3" selected>Last 3 months</option>
+              <option value="6">Last 6 months</option>
+              <option value="12">Last 12 months</option>
+              <option value="0">All time</option>
+            </select>
+          </div>
         </div>
 
         <div class="flex gap-3 mt-4">
@@ -135,7 +147,8 @@ export class FilterPanel {
       date: this.container.querySelector('#date-filter').value,
       userId: this.container.querySelector('#userid-filter').value,
       nickname: this.container.querySelector('#nickname-filter').value,
-      message: this.container.querySelector('#message-filter').value
+      message: this.container.querySelector('#message-filter').value,
+      monthsBack: parseInt(this.container.querySelector('#months-back').value) || 3
     };
 
     this.onFiltersChange(this.filters);
@@ -151,7 +164,8 @@ export class FilterPanel {
       date: '',
       userId: '',
       nickname: '',
-      message: ''
+      message: '',
+      monthsBack: 3
     };
 
     // Reset form elements
@@ -161,6 +175,7 @@ export class FilterPanel {
     this.container.querySelector('#userid-filter').value = '';
     this.container.querySelector('#nickname-filter').value = '';
     this.container.querySelector('#message-filter').value = '';
+    this.container.querySelector('#months-back').value = '3';
 
     this.onFiltersChange(this.filters);
   }

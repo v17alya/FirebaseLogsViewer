@@ -21,6 +21,7 @@ class FirebaseService {
    * @param {string} filters.userId - User ID filter
    * @param {string} filters.nickname - Nickname filter
    * @param {string} filters.message - Message content filter
+   * @param {number} filters.monthsBack - Number of months to look back (default: 3)
    * @returns {Promise<Array>} Array of log entries
    */
   async fetchLogs(filters = {}) {
@@ -121,6 +122,15 @@ class FirebaseService {
     if (filters.userId && logEntry.userId !== filters.userId) return false;
     if (filters.nickname && !logEntry.nickname.toLowerCase().includes(filters.nickname.toLowerCase())) return false;
     if (filters.message && !logEntry.message.toLowerCase().includes(filters.message.toLowerCase())) return false;
+    
+    // Date range filter
+    if (filters.monthsBack) {
+      const logDate = new Date(logEntry.timestamp);
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - filters.monthsBack);
+      
+      if (logDate < cutoffDate) return false;
+    }
     
     return true;
   }

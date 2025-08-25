@@ -151,15 +151,19 @@ class FirebaseLogsViewer {
   async loadLogs() {
     try {
       this.showLoadingState();
+      this.updateStatus('Loading logs...');
       
       const filters = this.filterPanel.getFilters();
+      const startTime = Date.now();
+      
       const logs = await this.firebaseService.fetchLogs(filters);
       
+      const loadTime = Date.now() - startTime;
       this.currentLogs = logs;
       this.logsTable.updateLogs(logs);
       this.exportPanel.updateLogs(logs);
       
-      this.updateStatus(`Loaded ${logs.length} logs`);
+      this.updateStatus(`Loaded ${logs.length} logs in ${loadTime}ms`);
     } catch (error) {
       console.error('Failed to load logs:', error);
       this.showError(`Failed to load logs: ${error.message}`);
