@@ -1,0 +1,60 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+node_modules/
+
+# Build output
+build/
+dist/
+.out/
+.bin/
+
+# Tooling caches
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+.stylelintcache
+.turbo/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Framework/platform
+.next/
+.nuxt/
+.svelte-kit/
+.vercel/
+.netlify/
+.firebase/
+firebase-debug.log
+
+# Misc
+*.local
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Mac zip metadata
+__MACOSX/

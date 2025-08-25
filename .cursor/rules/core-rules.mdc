@@ -1,0 +1,58 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+#Project Summary
+
+* Create a lightweight JavaScript project with a simple but polished UI.
+* Connect to Firebase Realtime Database and display logs in a structured way.
+* Core functions: filtering, grouping, saving/exporting logs.
+
+#Data Path Schema
+
+* Logs are stored in Firebase under nested paths:
+  `/StreamersMegagames/{server}/{platform}/{date}/{userId}/{logIndex}/{field}`
+* Example:
+  `/StreamersMegagames/SHOLAHEYSERVER/Linux/2025-07-30/2ad48dcf-fa87-4a21-85ef-f9d583cba5c9/0/message`
+* Fields include:
+
+  * **message** → log text
+  * **nickname** → user nickname
+  * **timestamp** → time of the log
+
+#UI
+
+* Clean, minimal, and user-friendly interface.
+* Display logs in a list or table.
+* Provide options to filter and group logs.
+
+#Features
+
+* Filter by project, server, platform, date, userId, nickname, or message.
+* Group logs by date, server, or user.
+* Export logs to a file (e.g., JSON/CSV).
+* Allow saving or downloading filtered results.
+
+#Firebase Config
+
+```js
+const firebaseConfig = {
+  apiKey: "AIzaSyB1T_bGrmu7reGcsW3V70hAznbE3L_Uo8o",
+  authDomain: "logexporter-42a5f.firebaseapp.com",
+  databaseURL: "https://logexporter-42a5f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "logexporter-42a5f",
+  storageBucket: "logexporter-42a5f.firebasestorage.app",
+  messagingSenderId: "334718041282",
+  appId: "1:334718041282:web:857f398951dd2eddfd8f5b",
+  measurementId: "G-6LGNFPT0BK"
+};
+```
+
+#Deliverables
+
+* Source code of the JS project.
+* Core UI and logic for log browsing.
+* Minimal setup instructions (README).
+* Example Firebase config and usage guide.
