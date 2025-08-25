@@ -35,33 +35,45 @@ export class FilterPanel {
           <!-- Server Filter -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Server</label>
-            <select id="server-filter" class="input-field">
-              <option value="">All Servers</option>
-            </select>
+            <div class="relative">
+              <input type="text" id="server-search" class="input-field pr-8" placeholder="Search servers...">
+              <select id="server-filter" class="input-field mt-2">
+                <option value="">All Servers</option>
+              </select>
+            </div>
           </div>
 
           <!-- Platform Filter -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Platform</label>
-            <select id="platform-filter" class="input-field">
-              <option value="">All Platforms</option>
-            </select>
+            <div class="relative">
+              <input type="text" id="platform-search" class="input-field pr-8" placeholder="Search platforms...">
+              <select id="platform-filter" class="input-field mt-2">
+                <option value="">All Platforms</option>
+              </select>
+            </div>
           </div>
 
           <!-- Date Filter -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
-            <select id="date-filter" class="input-field">
-              <option value="">All Dates</option>
-            </select>
+            <div class="relative">
+              <input type="text" id="date-search" class="input-field pr-8" placeholder="Search dates...">
+              <select id="date-filter" class="input-field mt-2">
+                <option value="">All Dates</option>
+              </select>
+            </div>
           </div>
 
           <!-- User ID Filter -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">User ID</label>
-            <select id="userid-filter" class="input-field">
-              <option value="">All Users</option>
-            </select>
+            <div class="relative">
+              <input type="text" id="userid-search" class="input-field pr-8" placeholder="Search user IDs...">
+              <select id="userid-filter" class="input-field mt-2">
+                <option value="">All Users</option>
+              </select>
+            </div>
           </div>
 
           <!-- Nickname Filter -->
@@ -161,44 +173,54 @@ export class FilterPanel {
     this.filterOptions = { ...this.filterOptions, ...options };
     
     // Update server options
-    const serverSelect = this.container.querySelector('#server-filter');
-    serverSelect.innerHTML = '<option value="">All Servers</option>';
-    this.filterOptions.servers.forEach(server => {
-      const option = document.createElement('option');
-      option.value = server;
-      option.textContent = server;
-      serverSelect.appendChild(option);
+    this.updateSelectOptions('server', this.filterOptions.servers);
+    this.updateSelectOptions('platform', this.filterOptions.platforms);
+    this.updateSelectOptions('date', this.filterOptions.dates);
+    this.updateSelectOptions('userid', this.filterOptions.userIds);
+  }
+
+  /**
+   * Update select options with search functionality
+   * @param {string} field - Field name
+   * @param {Array} options - Available options
+   */
+  updateSelectOptions(field, options) {
+    const select = this.container.querySelector(`#${field}-filter`);
+    const searchInput = this.container.querySelector(`#${field}-search`);
+    
+    // Store original options
+    select.dataset.originalOptions = JSON.stringify(options);
+    
+    // Update select with all options
+    select.innerHTML = '<option value="">All ' + field.charAt(0).toUpperCase() + field.slice(1) + 's</option>';
+    options.forEach(option => {
+      const optionElement = document.createElement('option');
+      optionElement.value = option;
+      optionElement.textContent = option;
+      select.appendChild(optionElement);
     });
 
-    // Update platform options
-    const platformSelect = this.container.querySelector('#platform-filter');
-    platformSelect.innerHTML = '<option value="">All Platforms</option>';
-    this.filterOptions.platforms.forEach(platform => {
-      const option = document.createElement('option');
-      option.value = platform;
-      option.textContent = platform;
-      platformSelect.appendChild(option);
-    });
-
-    // Update date options
-    const dateSelect = this.container.querySelector('#date-filter');
-    dateSelect.innerHTML = '<option value="">All Dates</option>';
-    this.filterOptions.dates.forEach(date => {
-      const option = document.createElement('option');
-      option.value = date;
-      option.textContent = date;
-      dateSelect.appendChild(option);
-    });
-
-    // Update user ID options
-    const userIdSelect = this.container.querySelector('#userid-filter');
-    userIdSelect.innerHTML = '<option value="">All Users</option>';
-    this.filterOptions.userIds.forEach(userId => {
-      const option = document.createElement('option');
-      option.value = userId;
-      option.textContent = userId;
-      userIdSelect.appendChild(option);
-    });
+    // Add search functionality
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const originalOptions = JSON.parse(select.dataset.originalOptions || '[]');
+        
+        // Filter options based on search term
+        const filteredOptions = originalOptions.filter(option => 
+          option.toLowerCase().includes(searchTerm)
+        );
+        
+        // Update select with filtered options
+        select.innerHTML = '<option value="">All ' + field.charAt(0).toUpperCase() + field.slice(1) + 's</option>';
+        filteredOptions.forEach(option => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option;
+          optionElement.textContent = option;
+          select.appendChild(optionElement);
+        });
+      });
+    }
   }
 
   /**

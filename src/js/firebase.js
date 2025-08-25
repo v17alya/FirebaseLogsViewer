@@ -1,5 +1,5 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, get } from 'firebase/database';
 import { firebaseConfig, DATABASE_PATH, LOG_FIELDS } from '../config/firebase-config.js';
 
 /**
@@ -164,10 +164,13 @@ class FirebaseService {
     if (path.length === 0 && field === 'server') {
       Object.keys(data).forEach(key => values.add(key));
     } else if (path.length === 1 && field === 'platform') {
+      // Platform level contains both platforms and dates
       Object.keys(data).forEach(key => values.add(key));
     } else if (path.length === 2 && field === 'date') {
+      // Date level contains user IDs
       Object.keys(data).forEach(key => values.add(key));
     } else if (path.length === 3 && field === 'userId') {
+      // User ID level
       Object.keys(data).forEach(key => values.add(key));
     } else {
       Object.keys(data).forEach(key => {
