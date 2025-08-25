@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, get, query, orderByChild, startAt, endAt } from 'firebase/database';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
 import { firebaseConfig, DATABASE_PATH, LOG_FIELDS } from '../config/firebase-config.js';
 
 /**
