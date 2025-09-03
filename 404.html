@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Logs Viewer</title>
+    <link rel="icon" type="image/svg+xml" href="/FirebaseLogsViewer/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/FirebaseLogsViewer/favicon.ico" />
+    <link rel="stylesheet" href="/FirebaseLogsViewer/assets/styles.css" />
+    <script type="module" crossorigin src="/FirebaseLogsViewer/assets/main-DqM8iEtc.js"></script>
+  </head>
+  <body>
+    <div class="min-h-screen">
+      <header class="bg-white border-b">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <h1 class="text-xl font-semibold">Firebase Logs Viewer</h1>
+          <div class="flex items-center gap-2">
+            <button id="btn-refresh" class="btn-secondary">Refresh</button>
+            <button id="btn-export" class="btn-primary">Export</button>
+            <button id="btn-delete" class="btn-secondary">Delete</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+        <div id="error-banner" class="hidden bg-red-600 text-white rounded px-4 py-3"></div>
+        <section class="card" id="filters-card">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm mb-1" for="project">Project</label>
+              <div class="flex gap-2">
+                <select id="projectSelect" class="input-field flex-1"></select>
+                <input id="project" class="input-field flex-1" type="text" placeholder="Mega" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="server">Server</label>
+              <div class="flex gap-2">
+                <select id="server" class="input-field flex-1"></select>
+                <input id="serverText" class="input-field flex-1" type="text" placeholder="custom server" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="platform">Platform</label>
+              <div class="flex gap-2">
+                <select id="platform" class="input-field flex-1"></select>
+                <input id="platformText" class="input-field flex-1" type="text" placeholder="custom platform" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="date">Date</label>
+              <input id="date" class="input-field" type="date" />
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="userId">User ID</label>
+              <input id="userId" class="input-field" type="text" placeholder="user-..." />
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="nickname">Nickname</label>
+              <input id="nickname" class="input-field" type="text" placeholder="nickname" />
+            </div>
+            <div class="md:col-span-2 lg:col-span-3">
+              <label class="block text-sm mb-1" for="message">Message contains</label>
+              <input id="message" class="input-field" type="text" placeholder="search text" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="block text-sm" for="limit">Limit</label>
+              <input id="limit" class="input-field max-w-xs" type="number" value="200" min="10" step="10" />
+            </div>
+            <div>
+              <label class="block text-sm mb-1" for="uniqueness">Uniqueness</label>
+              <select id="uniqueness" class="input-field">
+                <option value="">None</option>
+                <option value="message">Unique messages in scope</option>
+                <option value="perUserMessage">Unique messages per user</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <button id="btn-clear" class="btn-secondary">Clear</button>
+            <button id="btn-apply" class="btn-primary">Apply Filters</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm text-gray-600">Found <span id="logs-count">0</span> logs</div>
+            <div class="flex items-center gap-2">
+              <label class="text-sm" for="groupBy">Group by</label>
+              <select id="groupBy" class="input-field">
+                <option value="">None</option>
+                <option value="date">Date</option>
+                <option value="server">Server</option>
+                <option value="nickname">Nickname</option>
+                <option value="platform">Platform</option>
+              </select>
+            </div>
+          </div>
+          <div id="logs-container" class="overflow-x-auto">
+            <!-- table injected by LogsTable component -->
+          </div>
+        </section>
+      </main>
+
+      <dialog id="details-modal" class="rounded-lg shadow-xl max-w-2xl w-full"></dialog>
+      <dialog id="export-modal" class="rounded-lg shadow-xl max-w-xs w-full">
+        <div class="p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Export logs</h3>
+            <button id="export-close" class="text-gray-600">✕</button>
+          </div>
+          <div>
+            <label class="block text-sm mb-1" for="export-filename">Filename</label>
+            <input id="export-filename" class="input-field" type="text" placeholder="logs_YYYY-MM-DD" />
+          </div>
+          <div class="space-y-2">
+            <div class="text-sm text-gray-600">Choose format</div>
+            <div class="grid grid-cols-1 gap-2">
+              <button id="export-json" class="btn-secondary">JSON</button>
+              <button id="export-csv" class="btn-secondary">CSV</button>
+              <button id="export-txt" class="btn-secondary">TXT</button>
+            </div>
+          </div>
+        </div>
+      </dialog>
+      <dialog id="delete-modal" class="rounded-lg shadow-xl max-w-xl w-full">
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Delete data by path</h3>
+            <button id="delete-cancel" class="text-gray-600">✕</button>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-sm mb-1" for="delete-path-input">Database path to delete</label>
+            <input id="delete-path-input" class="input-field" type="text" placeholder="e.g. test/logs/entries/LOG_ID or any node path" />
+            <p class="text-xs text-gray-600">Enter a Firebase Realtime Database path relative to the root (no leading slash). Be careful: deletion is irreversible.</p>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button id="delete-next" class="btn-primary">Next</button>
+          </div>
+        </div>
+      </dialog>
+      <dialog id="confirm-delete-modal" class="rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6 space-y-4">
+          <h3 class="text-lg font-semibold">Confirm deletion</h3>
+          <p class="text-sm">You are about to delete data at path:</p>
+          <div class="p-3 bg-red-50 text-red-700 rounded text-sm font-mono" id="confirm-delete-path"></div>
+          <p class="text-sm text-gray-700">This action cannot be undone.</p>
+          <div class="flex justify-end gap-2">
+            <button id="confirm-delete-cancel" class="btn-secondary">Cancel</button>
+            <button id="confirm-delete-do" class="btn-primary">Delete</button>
+          </div>
+        </div>
+      </dialog>
+      <div id="backdrop" class="fixed inset-0 bg-black bg-opacity-50 hidden"></div>
+    </div>
+
+  </body>
+  </html>
+
+
