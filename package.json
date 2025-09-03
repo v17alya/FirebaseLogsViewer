@@ -5,10 +5,10 @@
   "main": "index.html",
   "scripts": {
     "dev": "npx tailwindcss -i ./src/css/input.css -o ./public/assets/styles.css --watch",
-    "build": "npx tailwindcss -i ./src/css/input.css -o ./public/assets/styles.css --minify",
+    "build:css": "npx tailwindcss -i ./src/css/input.css -o ./public/assets/styles.css --minify",
+    "build": "npm run build:css && vite build",
     "start": "vite",
     "start:mock": "vite --port 3001",
-    "build:app": "vite build",
     "preview": "vite preview",
     "test:schema": "open test-new-schema.html"
   },
