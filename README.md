@@ -2,6 +2,8 @@
 
 A lightweight JavaScript application for viewing and analyzing logs stored in Firebase Realtime Database using the `firebase_logs.module.js` schema.
 
+**🌐 Live Demo: [https://v17alya.github.io/FirebaseLogsViewer/](https://v17alya.github.io/FirebaseLogsViewer/)**
+
 ## Features
 
 - **Real-time Log Viewing**: Connect to Firebase RTDB and display logs in a structured table
