@@ -3,15 +3,18 @@ import { fetchLogs } from './firebase.js';
 import { FilterPanel } from '../components/FilterPanel.js';
 import { LogsTable } from '../components/LogsTable.js';
 import { ExportPanel } from '../components/ExportPanel.js';
+import { DeletePanel } from '../components/DeletePanel.js';
 
 const filterPanel = new FilterPanel();
 const logsTable = new LogsTable('logs-container');
 const exportPanel = new ExportPanel();
+const deletePanel = new DeletePanel();
 
 async function init() {
   try {
     await filterPanel.loadInitialOptions();
     attachHandlers();
+    deletePanel.onDone(() => applyFilters());
     await applyFilters();
   } catch (e) {
     showError(e);

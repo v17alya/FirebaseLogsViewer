@@ -17,7 +17,7 @@ export const firebaseConfig = {
  * New schema constants based on firebase_logs.module.js
  * @type {Object}
  */
-export const LOGS_PATH = 'test/logs';
+export const LOGS_PATH = 'logs';
 export const FOLDER_ENTRIES = 'entries';
 export const FOLDER_INDEXES = 'indexes';
 

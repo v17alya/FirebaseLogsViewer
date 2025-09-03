@@ -16,6 +16,7 @@
           <div class="flex items-center gap-2">
             <button id="btn-refresh" class="btn-secondary">Refresh</button>
             <button id="btn-export" class="btn-primary">Export</button>
+            <button id="btn-delete" class="btn-secondary">Delete</button>
           </div>
         </div>
       </header>
@@ -118,6 +119,34 @@
               <button id="export-csv" class="btn-secondary">CSV</button>
               <button id="export-txt" class="btn-secondary">TXT</button>
             </div>
+          </div>
+        </div>
+      </dialog>
+      <dialog id="delete-modal" class="rounded-lg shadow-xl max-w-xl w-full">
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Delete data by path</h3>
+            <button id="delete-cancel" class="text-gray-600">✕</button>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-sm mb-1" for="delete-path-input">Database path to delete</label>
+            <input id="delete-path-input" class="input-field" type="text" placeholder="e.g. test/logs/entries/LOG_ID or any node path" />
+            <p class="text-xs text-gray-600">Enter a Firebase Realtime Database path relative to the root (no leading slash). Be careful: deletion is irreversible.</p>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button id="delete-next" class="btn-primary">Next</button>
+          </div>
+        </div>
+      </dialog>
+      <dialog id="confirm-delete-modal" class="rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6 space-y-4">
+          <h3 class="text-lg font-semibold">Confirm deletion</h3>
+          <p class="text-sm">You are about to delete data at path:</p>
+          <div class="p-3 bg-red-50 text-red-700 rounded text-sm font-mono" id="confirm-delete-path"></div>
+          <p class="text-sm text-gray-700">This action cannot be undone.</p>
+          <div class="flex justify-end gap-2">
+            <button id="confirm-delete-cancel" class="btn-secondary">Cancel</button>
+            <button id="confirm-delete-do" class="btn-primary">Delete</button>
           </div>
         </div>
       </dialog>

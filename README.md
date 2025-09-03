@@ -10,6 +10,7 @@ A lightweight JavaScript application for viewing and analyzing logs stored in Fi
 - **Sorting & Pagination**: Sort logs by any field and navigate through large datasets
 - **Export Functionality**: Export filtered logs to JSON, CSV, or TXT formats
 - **Responsive Design**: Clean, modern UI that works on desktop and mobile devices
+- **Data Deletion (with confirmation)**: Delete any Firebase RTDB path via a two-step dialog
 
 ## Data Structure
 
@@ -135,6 +136,20 @@ export const DEFAULT_PROJECT = 'YourProjectName';
    - **CSV**: Spreadsheet-compatible format
    - **TXT**: Plain text format with formatted log entries
 
+### Deleting Data (use with caution)
+
+1. Click the "Delete" button in the header.
+2. Enter the Firebase Realtime Database path to delete (relative to the root, no leading slash). Examples:
+   - `logs/entries/LOG_ID`
+   - `logs/indexes/byProject/Mega`
+   - Any subtree under your database
+3. Click "Next" and review the path in the confirmation dialog.
+4. Click "Delete" to confirm. This action is irreversible.
+
+Notes:
+- Paths must be absolute within the database root but must not start with `/`.
+- Ensure you have appropriate Firebase security rules and permissions to perform deletions.
+
 ## API Reference
 
 ### FirebaseService
@@ -148,6 +163,7 @@ Main service for interacting with Firebase RTDB.
 - `fetchPlatforms(server)`: Get platforms for a specific server
 - `fetchDates(server, platform)`: Get available dates for server/platform combination
 - `fetchUserIds(server, platform, date)`: Get user IDs for specific criteria
+- `deletePath(absolutePath)`: Delete a node/subtree by RTDB path (no leading slash)
 
 ### FilterPanel
 
@@ -176,6 +192,14 @@ Component for exporting logs to different formats.
 
 - `updateLogs(logs)`: Update the export panel with current logs
 
+### DeletePanel
+
+Component for deleting data by a specified path with confirmation.
+
+#### Methods
+
+- `onDone(callback)`: Register a callback to run after successful deletion (used to refresh UI)
+
 ## Development
 
 ### Project Structure
@@ -185,7 +209,8 @@ src/
 ├── components/          # UI components
 │   ├── FilterPanel.js   # Filter management
 │   ├── LogsTable.js     # Log display table
-│   └── ExportPanel.js   # Export functionality
+│   ├── ExportPanel.js   # Export functionality
+│   └── DeletePanel.js   # Two-step delete (input + confirmation)
 ├── config/              # Configuration files
 │   └── firebase-config.js
 ├── js/                  # Core application logic
@@ -202,6 +227,16 @@ npm run build
 ```
 
 The built files will be in the `dist/` directory.
+
+### Previewing the Production Build
+
+Serve the production build locally and open in your browser:
+
+```bash
+npm run preview
+```
+
+Then open `http://localhost:4173`.
 
 ## Troubleshooting
 

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, get, query, orderByKey, limitToLast, child } from 'firebase/database';
+import { getDatabase, ref, get, query, orderByKey, limitToLast, child, remove } from 'firebase/database';
 import { firebaseConfig, LOGS_PATH, FOLDER_ENTRIES, FOLDER_INDEXES, INDEX_PATHS, DEFAULT_PROJECT } from '../config/firebase-config.js';
 
 let app = null;
@@ -170,6 +170,25 @@ export async function fetchProjects() {
   const snap = await get(byProjectRef);
   if (!snap.exists()) return [];
   return Object.keys(snap.val()).sort();
+}
+
+/**
+ * Delete a node by absolute database path (relative to root, no leading slash).
+ * Example: "test/logs/entries/LOG_ID" or any subtree under your DB.
+ * @param {string} absolutePath
+ * @returns {Promise<void>}
+ */
+export async function deletePath(absolutePath) {
+  if (!absolutePath || typeof absolutePath !== 'string') {
+    throw new Error('Path is required');
+  }
+  const trimmed = absolutePath.replace(/^\/+/, '').trim();
+  if (!trimmed) {
+    throw new Error('Path cannot be empty');
+  }
+  ensureFirebase();
+  const targetRef = ref(db, trimmed);
+  await remove(targetRef);
 }
 
 
