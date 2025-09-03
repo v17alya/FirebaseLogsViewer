@@ -1,18 +1,19 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: '.',
+  root: ".",
   build: {
-    outDir: 'dist',
+    outDir: "dist",
     rollupOptions: {
       input: {
-        main: './index.html',
-        mock: './index-mock.html'
-      }
-    }
+        main: "./index.html",
+        mock: "./index-mock.html",
+      },
+    },
   },
   server: {
     port: 3000,
-    open: true
-  }
+    open: true,
+  },
+  base: "/FirebaseLogsViewer/",
 });
