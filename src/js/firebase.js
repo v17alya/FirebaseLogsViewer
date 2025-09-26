@@ -38,22 +38,25 @@ function extractLogIdFromIndexKey(key) {
   // Debug logging
   console.log('[FirebaseService] Processing index key:', key);
   
-  // If key contains an underscore and the suffix looks like a composed logId with '|', treat as tsKey_logId
+  // Based on console analysis, the index keys have format:
+  // "project|server|platform|date|userId|sequence" or similar
+  // The full key IS the logId, so we should return it as-is
+  // Only extract suffix if it's clearly a timestamp_logId pattern (contains underscore at start)
+  
   const underscore = key.indexOf('_');
   if (underscore > 0) {
+    const prefix = key.slice(0, underscore);
     const suffix = key.slice(underscore + 1);
-    console.log('[FirebaseService] Key has underscore, suffix:', suffix);
+    console.log('[FirebaseService] Key has underscore, prefix:', prefix, 'suffix:', suffix);
     
-    // Check if suffix contains '|' (composed logId) or if it's a userId pattern
-    if (suffix.includes('|')) {
-      console.log('[FirebaseService] Suffix contains |, returning:', suffix);
+    // Only extract suffix if prefix looks like a timestamp (all digits)
+    if (/^\d+$/.test(prefix)) {
+      console.log('[FirebaseService] Prefix is timestamp, returning suffix:', suffix);
       return suffix;
     }
     
-    // For userId patterns like "1997232962_1758875598", we might want to return the full key
-    // or just the suffix depending on how the index is structured
-    // Let's be more conservative and return the full key for now
-    console.log('[FirebaseService] Suffix does not contain |, returning full key:', key);
+    // Otherwise, return the full key as it's likely a composed logId
+    console.log('[FirebaseService] Prefix is not timestamp, returning full key:', key);
     return key;
   }
   
