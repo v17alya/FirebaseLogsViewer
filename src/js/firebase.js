@@ -34,12 +34,30 @@ function makePath(parts) {
  */
 function extractLogIdFromIndexKey(key) {
   if (!key) return key;
+  
+  // Debug logging
+  console.log('[FirebaseService] Processing index key:', key);
+  
   // If key contains an underscore and the suffix looks like a composed logId with '|', treat as tsKey_logId
   const underscore = key.indexOf('_');
   if (underscore > 0) {
     const suffix = key.slice(underscore + 1);
-    if (suffix.includes('|')) return suffix;
+    console.log('[FirebaseService] Key has underscore, suffix:', suffix);
+    
+    // Check if suffix contains '|' (composed logId) or if it's a userId pattern
+    if (suffix.includes('|')) {
+      console.log('[FirebaseService] Suffix contains |, returning:', suffix);
+      return suffix;
+    }
+    
+    // For userId patterns like "1997232962_1758875598", we might want to return the full key
+    // or just the suffix depending on how the index is structured
+    // Let's be more conservative and return the full key for now
+    console.log('[FirebaseService] Suffix does not contain |, returning full key:', key);
+    return key;
   }
+  
+  console.log('[FirebaseService] No underscore, returning key as-is:', key);
   return key;
 }
 
@@ -57,19 +75,32 @@ export async function fetchByIndexPath(indexPath, limit = 200) {
   const snap = await get(q);
   const ids = snap.exists() ? Object.keys(snap.val()) : [];
   console.log('[FirebaseService] Index IDs count:', ids.length);
-  if (ids.length === 0) return [];
+  console.log('[FirebaseService] First few index IDs:', ids.slice(0, 5));
+  if (ids.length === 0) {
+    console.warn('[FirebaseService] No index entries found for path:', indexPath);
+    return [];
+  }
 
   // Normalize keys to pure logIds when index stores keys as "ts_logId"
   const logIds = ids.map(extractLogIdFromIndexKey);
+  console.log('[FirebaseService] Extracted logIds (first 5):', logIds.slice(0, 5));
 
   const entriesRef = ref(db, makePath([LOGS_PATH, FOLDER_ENTRIES]));
   const reads = logIds.map(id => get(child(entriesRef, id)));
   const results = await Promise.allSettled(reads);
+  
+  // Debug failed reads
+  const failedReads = results.filter(r => r.status === 'rejected');
+  if (failedReads.length > 0) {
+    console.warn('[FirebaseService] Failed to read entries:', failedReads.length, 'out of', results.length);
+  }
+  
   const entries = results
     .filter(r => r.status === 'fulfilled' && r.value.exists())
     .map(r => ({ ...r.value.val(), logId: r.value.key }))
     .sort((a, b) => a.ts - b.ts);
   console.log('[FirebaseService] Entries fetched:', entries.length);
+  console.log('[FirebaseService] Sample entry:', entries[0]);
   // Fallback: if index has keys but entries are missing (stale index), try fetching by date bucket when present in path
   if (entries.length === 0 && /\/\d{4}-\d{2}-\d{2}$/.test(indexPath)) {
     const parts = indexPath.split('/');
@@ -102,6 +133,12 @@ export async function fetchLogs(filters = {}, limit = 200) {
   const platform = (filters.platform || '').trim();
   const date = (filters.date || '').trim();
   const userId = (filters.userId || '').trim();
+  
+  // Debug logging for troubleshooting
+  console.log('[FirebaseService] Input filters:', {
+    project, server, platform, date, userId,
+    originalFilters: filters
+  });
 
   let indexPath = '';
   if (project && server && platform && date) {
@@ -170,6 +207,33 @@ export async function fetchProjects() {
   const snap = await get(byProjectRef);
   if (!snap.exists()) return [];
   return Object.keys(snap.val()).sort();
+}
+
+/**
+ * Debug function to check what indexes are available
+ * @param {string} [basePath=''] - Base path to check
+ * @returns {Promise<Object>}
+ */
+export async function debugIndexes(basePath = '') {
+  ensureFirebase();
+  const indexPath = makePath([LOGS_PATH, FOLDER_INDEXES, basePath]);
+  console.log('[FirebaseService] Debug: checking indexes at path:', indexPath);
+  
+  try {
+    const idxRef = ref(db, indexPath);
+    const snap = await get(idxRef);
+    if (snap.exists()) {
+      const data = snap.val();
+      console.log('[FirebaseService] Debug: found indexes:', Object.keys(data));
+      return data;
+    } else {
+      console.log('[FirebaseService] Debug: no indexes found at path:', indexPath);
+      return null;
+    }
+  } catch (error) {
+    console.error('[FirebaseService] Debug: error checking indexes:', error);
+    return null;
+  }
 }
 
 /**

@@ -1,5 +1,5 @@
 import { DEFAULT_PROJECT } from '../config/firebase-config.js';
-import { fetchLogs } from './firebase.js';
+import { fetchLogs, debugIndexes } from './firebase.js';
 import { FilterPanel } from '../components/FilterPanel.js';
 import { LogsTable } from '../components/LogsTable.js';
 import { ExportPanel } from '../components/ExportPanel.js';
@@ -83,6 +83,30 @@ function clearError() {
   el.textContent = '';
   el.classList.add('hidden');
 }
+
+// Debug function to help troubleshoot missing logs
+window.debugLogs = async function() {
+  console.log('=== DEBUG LOGS ===');
+  
+  // Check available indexes
+  console.log('1. Checking available indexes...');
+  await debugIndexes();
+  
+  // Check project-specific indexes
+  const project = filterPanel.getFilters().project || DEFAULT_PROJECT;
+  console.log('2. Checking project indexes for:', project);
+  await debugIndexes(`byProject/${project}`);
+  
+  // Check date-specific indexes for 2024-09-25
+  console.log('3. Checking date indexes for 2024-09-25...');
+  await debugIndexes(`byProjectDate/${project}/2024-09-25`);
+  
+  // Check user-specific indexes
+  console.log('4. Checking user indexes...');
+  await debugIndexes('byUser');
+  
+  console.log('=== END DEBUG ===');
+};
 
 init().catch(console.error);
 
