@@ -1,9 +1,11 @@
 import { formatTimestamp, truncateText } from '../utils/export-utils.js';
+import { groupBySimilarErrors, groupByUserThenErrors, normalizeErrorMessage } from '../utils/grouping-utils.js';
 
 export class LogsTable {
   constructor(containerId = 'logs-container') {
     this.container = document.getElementById(containerId);
     this.rows = [];
+    this.expandedGroups = new Set();
   }
 
   updateLogs(logs = [], groupBy = '') {
@@ -21,6 +23,20 @@ export class LogsTable {
       this._bindRowActions();
       return;
     }
+    
+    // Smart error grouping
+    if (groupBy === 'similarErrors') {
+      this._renderSimilarErrorGroups();
+      return;
+    }
+    
+    // User + error grouping
+    if (groupBy === 'userId') {
+      this._renderUserErrorGroups();
+      return;
+    }
+    
+    // Standard grouping
     const grouped = {};
     for (const row of this.rows) {
       const key = row[groupBy] || 'Unknown';
@@ -36,6 +52,127 @@ export class LogsTable {
     });
     this.container.innerHTML = parts.join('');
     this._bindRowActions();
+  }
+
+  _renderSimilarErrorGroups() {
+    const errorGroups = groupBySimilarErrors(this.rows);
+    const parts = [];
+    
+    let groupIndex = 0;
+    for (const [normalizedMsg, logs] of errorGroups) {
+      const groupId = `error-group-${groupIndex++}`;
+      const isExpanded = this.expandedGroups.has(groupId);
+      const sample = logs[0].message || normalizedMsg;
+      
+      parts.push(`
+        <div class="mb-3 border rounded-lg bg-white shadow-sm">
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-t-lg cursor-pointer hover:bg-gray-100" data-toggle-group="${groupId}">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <span class="font-medium text-gray-800">${truncateText(sample, 100)}</span>
+            </div>
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">${logs.length}</span>
+          </div>
+          <div id="${groupId}" class="overflow-hidden transition-all ${isExpanded ? '' : 'hidden'}">
+            ${this._renderTable(logs)}
+          </div>
+        </div>
+      `);
+    }
+    
+    this.container.innerHTML = parts.join('');
+    this._bindGroupToggle();
+    this._bindRowActions();
+  }
+
+  _renderUserErrorGroups() {
+    const userErrorGroups = groupByUserThenErrors(this.rows);
+    const parts = [];
+    
+    let userIndex = 0;
+    for (const [userId, errorGroups] of userErrorGroups) {
+      const userGroupId = `user-group-${userIndex++}`;
+      const isUserExpanded = this.expandedGroups.has(userGroupId);
+      const totalLogs = Array.from(errorGroups.values()).reduce((sum, logs) => sum + logs.length, 0);
+      
+      // Find nickname from first log
+      const firstLog = Array.from(errorGroups.values())[0]?.[0];
+      const nickname = firstLog?.nickname || '';
+      
+      parts.push(`
+        <div class="mb-4 border rounded-lg bg-white shadow-sm">
+          <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-t-lg cursor-pointer hover:bg-indigo-100" data-toggle-group="${userGroupId}">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 transition-transform ${isUserExpanded ? 'rotate-90' : ''}" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <div>
+                <div class="font-medium text-gray-800">${nickname || userId}</div>
+                <div class="text-xs text-gray-600 font-mono">${userId}</div>
+              </div>
+            </div>
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-semibold">${totalLogs}</span>
+          </div>
+          <div id="${userGroupId}" class="overflow-hidden transition-all ${isUserExpanded ? '' : 'hidden'}">
+      `);
+      
+      // Render error groups for this user
+      let errorIndex = 0;
+      for (const [normalizedMsg, logs] of errorGroups) {
+        const errorGroupId = `${userGroupId}-error-${errorIndex++}`;
+        const isErrorExpanded = this.expandedGroups.has(errorGroupId);
+        const sample = logs[0].message || normalizedMsg;
+        
+        parts.push(`
+          <div class="m-3 border rounded bg-gray-50">
+            <div class="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-100" data-toggle-group="${errorGroupId}">
+              <div class="flex items-center gap-2">
+                <svg class="w-3 h-3 transition-transform ${isErrorExpanded ? 'rotate-90' : ''}" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-sm text-gray-700">${truncateText(sample, 80)}</span>
+              </div>
+              <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${logs.length}</span>
+            </div>
+            <div id="${errorGroupId}" class="overflow-hidden transition-all ${isErrorExpanded ? '' : 'hidden'}">
+              ${this._renderTable(logs)}
+            </div>
+          </div>
+        `);
+      }
+      
+      parts.push(`
+          </div>
+        </div>
+      `);
+    }
+    
+    this.container.innerHTML = parts.join('');
+    this._bindGroupToggle();
+    this._bindRowActions();
+  }
+
+  _bindGroupToggle() {
+    this.container.querySelectorAll('[data-toggle-group]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const groupId = btn.getAttribute('data-toggle-group');
+        const groupDiv = document.getElementById(groupId);
+        const arrow = btn.querySelector('svg');
+        
+        if (this.expandedGroups.has(groupId)) {
+          this.expandedGroups.delete(groupId);
+          groupDiv.classList.add('hidden');
+          arrow.classList.remove('rotate-90');
+        } else {
+          this.expandedGroups.add(groupId);
+          groupDiv.classList.remove('hidden');
+          arrow.classList.add('rotate-90');
+        }
+      });
+    });
   }
 
   _renderTable(rows) {

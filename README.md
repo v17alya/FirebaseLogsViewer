@@ -8,6 +8,12 @@ A lightweight JavaScript application for viewing and analyzing logs stored in Fi
 
 - **Real-time Log Viewing**: Connect to Firebase RTDB and display logs in a structured table
 - **Advanced Filtering**: Filter logs by server, platform, date, user ID, nickname, and message content
+- **Smart Error Grouping**: Automatically group similar errors (e.g., `InvalidOperationException` with different parameters) together
+  - Expandable groups showing count of similar messages
+  - Visual indicators and collapsible UI for better organization
+- **User-Error Grouping**: Group logs by user with nested error grouping
+  - Two-level hierarchy: users → similar errors
+  - Count badges showing number of logs in each group
 - **Progressive Loading**: Load filter options dynamically based on available data
 - **Sorting & Pagination**: Sort logs by any field and navigate through large datasets
 - **Export Functionality**: Export filtered logs to JSON, CSV, or TXT formats
@@ -128,6 +134,38 @@ export const DEFAULT_PROJECT = 'YourProjectName';
 - Use pagination controls to navigate through large datasets
 - Click "Details" to view full log information in a modal
 - Click "..." next to long messages to view the full text
+
+### Grouping Logs
+
+The application offers intelligent grouping options to help organize and analyze large volumes of logs:
+
+#### Similar Errors Grouping
+Select **"Group by: Similar Errors"** to automatically group logs with similar error messages:
+- Errors like `InvalidOperationException: position: 578, reading: 18` and `InvalidOperationException: position: 715, reading: 36` are grouped together
+- Each group shows:
+  - A sample message from the group
+  - A count badge indicating the number of similar messages
+  - An expandable arrow to show/hide all messages in the group
+- Click on any group header to expand and see all individual log entries
+
+#### User with Errors Grouping
+Select **"Group by: User (with errors)"** to organize logs by user with nested error grouping:
+- Creates a two-level hierarchy:
+  1. **User level**: Groups logs by user ID/nickname
+  2. **Error level**: Within each user, groups similar errors together
+- Each user group displays:
+  - User nickname and ID
+  - Total count of all logs for that user
+  - Expandable arrow to show/hide user's errors
+- Each error subgroup shows:
+  - Sample error message
+  - Count of similar errors for that specific user
+  - Expandable arrow to view all occurrences
+
+This makes it easy to:
+- Identify patterns in error messages
+- Track which errors affect which users
+- Quickly analyze error distribution across your user base
 
 ### Exporting Logs
 

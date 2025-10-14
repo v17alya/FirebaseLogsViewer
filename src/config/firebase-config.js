@@ -60,4 +60,4 @@ export const LOG_FIELDS = {
  * Default project name from firebase_logs.module.js
  * @type {string}
  */
-export const DEFAULT_PROJECT = 'Mega';
+export const DEFAULT_PROJECT = 'StreamersMegagames';
