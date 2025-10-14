@@ -9,24 +9,17 @@ export function normalizeErrorMessage(message) {
   
   let normalized = message.trim();
   
-  // Replace specific numeric patterns in common Unity/system errors
+  // Replace all numeric patterns to group similar errors
   normalized = normalized
-    // "position: 578" → "position: N"
-    .replace(/position:\s*\d+/gi, 'position: N')
-    // "reading: 18" → "reading: N"
-    .replace(/reading:\s*\d+/gi, 'reading: N')
-    // "capacity: 584" → "capacity: N"
-    .replace(/capacity:\s*\d+/gi, 'capacity: N')
-    // "Size=768" → "Size=N"
-    .replace(/Size=\d+/gi, 'Size=N')
-    // Generic standalone numbers in brackets
-    .replace(/\[\d+\]/g, '[N]')
     // Hex addresses like 0x1234ABCD
-    .replace(/0x[0-9a-fA-F]+/g, '0xHEX')
-    // Timestamps or long numbers
-    .replace(/\b\d{6,}\b/g, 'N')
-    // Any other standalone numbers (be careful not to break error codes)
-    .replace(/:\s*\d+/g, ': N');
+    .replace(/0x[0-9a-fA-F]+/gi, '0xHEX')
+    // Negative numbers (including decimals) like -21, -84.5
+    .replace(/-\d+(\.\d+)?/g, 'N')
+    // Positive numbers (including decimals) like 578, 10264, 3.14
+    .replace(/\b\d+(\.\d+)?\b/g, 'N')
+    // Clean up multiple N's with operators between them (optional: makes output cleaner)
+    .replace(/N\s*([>=<]+)\s*N/g, 'N $1 N')
+    .replace(/N\s*(&&|\|\|)\s*N/g, 'N $1 N');
   
   return normalized;
 }

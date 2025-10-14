@@ -114,6 +114,12 @@
             <label class="block text-sm mb-1" for="export-filename">Filename</label>
             <input id="export-filename" class="input-field" type="text" placeholder="logs_YYYY-MM-DD" />
           </div>
+          <div id="export-groups-container" class="hidden">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input id="export-groups" type="checkbox" class="rounded" />
+              <span>Export groups only (summary)</span>
+            </label>
+          </div>
           <div class="space-y-2">
             <div class="text-sm text-gray-600">Choose format</div>
             <div class="grid grid-cols-1 gap-2">

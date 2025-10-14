@@ -170,11 +170,23 @@ This makes it easy to:
 ### Exporting Logs
 
 1. Apply your desired filters
-2. Click the "Export" button in the export panel
-3. Choose your preferred format:
+2. Click the "Export" button in the header
+3. Enter a filename (optional)
+4. **If using grouping** (Similar Errors or User grouping):
+   - Check **"Export groups only (summary)"** to export group statistics instead of full logs
+   - Unchecked: exports all individual log entries
+   - Checked: exports only group patterns, counts, and sample messages
+5. Choose your preferred format:
    - **JSON**: Structured data format
    - **CSV**: Spreadsheet-compatible format
    - **TXT**: Plain text format with formatted log entries
+
+#### Group Export Example
+
+When exporting groups, you get:
+- **JSON**: Array of objects with pattern, count, and sample message
+- **CSV**: Table with columns: Error Pattern, Count, Sample Message (or User/Group for nested)
+- **TXT**: Formatted text with counts and patterns clearly visible
 
 ### Deleting Data (use with caution)
 

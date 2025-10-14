@@ -6,10 +6,13 @@ export class LogsTable {
     this.container = document.getElementById(containerId);
     this.rows = [];
     this.expandedGroups = new Set();
+    this.currentGroups = null;
+    this.currentGroupBy = '';
   }
 
   updateLogs(logs = [], groupBy = '') {
     this.rows = logs;
+    this.currentGroupBy = groupBy;
     document.getElementById('logs-count').textContent = String(logs.length);
     this._render(groupBy);
     if (!logs.length) {
@@ -17,8 +20,17 @@ export class LogsTable {
     }
   }
 
+  getCurrentGroups() {
+    return this.currentGroups;
+  }
+
+  getCurrentGroupBy() {
+    return this.currentGroupBy;
+  }
+
   _render(groupBy) {
     if (!groupBy) {
+      this.currentGroups = null;
       this.container.innerHTML = this._renderTable(this.rows);
       this._bindRowActions();
       return;
@@ -37,6 +49,7 @@ export class LogsTable {
     }
     
     // Standard grouping
+    this.currentGroups = null;
     const grouped = {};
     for (const row of this.rows) {
       const key = row[groupBy] || 'Unknown';
@@ -56,6 +69,7 @@ export class LogsTable {
 
   _renderSimilarErrorGroups() {
     const errorGroups = groupBySimilarErrors(this.rows);
+    this.currentGroups = errorGroups; // Store for export
     const parts = [];
     
     let groupIndex = 0;
@@ -89,6 +103,7 @@ export class LogsTable {
 
   _renderUserErrorGroups() {
     const userErrorGroups = groupByUserThenErrors(this.rows);
+    this.currentGroups = userErrorGroups; // Store for export
     const parts = [];
     
     let userIndex = 0;

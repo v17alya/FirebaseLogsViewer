@@ -7,7 +7,7 @@ import { DeletePanel } from '../components/DeletePanel.js';
 
 const filterPanel = new FilterPanel();
 const logsTable = new LogsTable('logs-container');
-const exportPanel = new ExportPanel();
+const exportPanel = new ExportPanel(logsTable);
 const deletePanel = new DeletePanel();
 
 async function init() {

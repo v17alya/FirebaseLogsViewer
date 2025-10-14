@@ -133,3 +133,141 @@ export function truncateText(text, maxLength = 100) {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
 }
+
+/**
+ * Export grouped data to JSON format
+ * @param {Map|Object} groups - Map or object of grouped data
+ * @param {string} filename - Name of the file to save
+ */
+export function exportGroupsToJSON(groups, filename = 'groups.json') {
+  const groupsArray = [];
+  
+  if (groups instanceof Map) {
+    for (const [key, value] of groups) {
+      if (value instanceof Map) {
+        // Nested groups (user -> errors)
+        const subGroups = [];
+        for (const [subKey, subValue] of value) {
+          subGroups.push({
+            pattern: subKey,
+            count: subValue.length,
+            sample: subValue[0]?.message || subKey
+          });
+        }
+        groupsArray.push({
+          group: key,
+          totalCount: Array.from(value.values()).reduce((sum, arr) => sum + arr.length, 0),
+          errorGroups: subGroups
+        });
+      } else {
+        // Simple groups (error patterns)
+        groupsArray.push({
+          pattern: key,
+          count: value.length,
+          sample: value[0]?.message || key
+        });
+      }
+    }
+  }
+  
+  const dataStr = JSON.stringify(groupsArray, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(dataBlob);
+  link.download = filename;
+  link.click();
+  
+  URL.revokeObjectURL(link.href);
+}
+
+/**
+ * Export grouped data to CSV format
+ * @param {Map|Object} groups - Map or object of grouped data
+ * @param {string} filename - Name of the file to save
+ */
+export function exportGroupsToCSV(groups, filename = 'groups.csv') {
+  const rows = [];
+  
+  if (groups instanceof Map) {
+    for (const [key, value] of groups) {
+      if (value instanceof Map) {
+        // Nested groups (user -> errors)
+        for (const [subKey, subValue] of value) {
+          rows.push([
+            `"${key}"`,
+            `"${subKey}"`,
+            subValue.length,
+            `"${(subValue[0]?.message || subKey).replace(/"/g, '""')}"`
+          ].join(','));
+        }
+      } else {
+        // Simple groups (error patterns)
+        rows.push([
+          `"${key}"`,
+          value.length,
+          `"${(value[0]?.message || key).replace(/"/g, '""')}"`
+        ].join(','));
+      }
+    }
+  }
+  
+  const headers = rows[0]?.split(',').length === 4 
+    ? ['User/Group', 'Error Pattern', 'Count', 'Sample Message']
+    : ['Error Pattern', 'Count', 'Sample Message'];
+  
+  const csvContent = [headers.join(','), ...rows].join('\n');
+  
+  const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(dataBlob);
+  link.download = filename;
+  link.click();
+  
+  URL.revokeObjectURL(link.href);
+}
+
+/**
+ * Export grouped data to TXT format
+ * @param {Map|Object} groups - Map or object of grouped data
+ * @param {string} filename - Name of the file to save
+ */
+export function exportGroupsToTXT(groups, filename = 'groups.txt') {
+  const lines = [];
+  
+  if (groups instanceof Map) {
+    for (const [key, value] of groups) {
+      if (value instanceof Map) {
+        // Nested groups (user -> errors)
+        const totalCount = Array.from(value.values()).reduce((sum, arr) => sum + arr.length, 0);
+        lines.push(`\n${'='.repeat(80)}`);
+        lines.push(`USER: ${key}`);
+        lines.push(`TOTAL LOGS: ${totalCount}`);
+        lines.push(`${'-'.repeat(80)}`);
+        
+        for (const [subKey, subValue] of value) {
+          lines.push(`\n  Error Pattern (${subValue.length} occurrences):`);
+          lines.push(`  ${subValue[0]?.message || subKey}`);
+        }
+      } else {
+        // Simple groups (error patterns)
+        lines.push(`\n${'='.repeat(80)}`);
+        lines.push(`COUNT: ${value.length}`);
+        lines.push(`PATTERN: ${key}`);
+        lines.push(`SAMPLE: ${value[0]?.message || key}`);
+      }
+    }
+  }
+  
+  const textContent = lines.join('\n');
+  
+  const dataBlob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(dataBlob);
+  link.download = filename;
+  link.click();
+  
+  URL.revokeObjectURL(link.href);
+}
